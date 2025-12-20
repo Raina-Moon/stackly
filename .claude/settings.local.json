@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(yarn install:*)",
+      "Bash(yarn dev)",
+      "Bash(cat:*)",
+      "Bash(docker-compose up:*)"
+    ]
+  }
+}

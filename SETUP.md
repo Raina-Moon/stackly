@@ -115,3 +115,6 @@ Tailwind is configured and ready to use. Import styles in your components or use
 - Change ports in `docker-compose.yml` if 5432, 5050, 3000, or 3001 are in use
 - Update corresponding environment variables
 
+
+
+

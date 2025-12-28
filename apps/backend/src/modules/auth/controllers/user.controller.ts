@@ -1,0 +1,56 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
+import { UserService } from '../services/user.service';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
+
+@Controller('users')
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  @Post()
+  async create(@Body() createUserDto: CreateUserDto) {
+    const user = await this.userService.create(createUserDto);
+    // Exclude password from response
+    const { password, ...result } = user;
+    return result;
+  }
+
+  @Get()
+  async findAll(@Query('skip') skip = 0, @Query('take') take = 10) {
+    const { data, total } = await this.userService.findAll(skip, take);
+    // Exclude passwords from response
+    const sanitized = data.map(({ password, ...rest }) => rest);
+    return { data: sanitized, total };
+  }
+
+  @Get(':id')
+  async findById(@Param('id') id: string) {
+    const user = await this.userService.findById(id);
+    // Exclude password from response
+    const { password, ...result } = user;
+    return result;
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    const user = await this.userService.update(id, updateUserDto);
+    // Exclude password from response
+    const { password, ...result } = user;
+    return result;
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.userService.remove(id);
+    return { message: '사용자가 삭제되었습니다.' };
+  }
+}

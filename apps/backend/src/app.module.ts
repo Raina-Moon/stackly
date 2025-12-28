@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Board } from './entities/board.entity';
@@ -16,18 +16,32 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT, 10) || 5432,
-      username: process.env.DB_USERNAME || 'stackly',
-      password: process.env.DB_PASSWORD || 'stackly_dev_password',
-      database: process.env.DB_NAME || 'stackly_db',
-      autoLoadEntities: true,
-      synchronize: process.env.NODE_ENV !== 'production', // Only in development
-      entities: [User, Board, Column, Card, Schedule, RecurringSchedule, BoardMember],
-      logging: process.env.NODE_ENV === 'development',
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        console.log('[DB ENV CHECK]', {
+          DB_HOST: configService.get('DB_HOST'),
+          DB_PORT: configService.get('DB_PORT'),
+          DB_USERNAME: configService.get('DB_USERNAME'),
+          DB_PASSWORD: configService.get('DB_PASSWORD'),
+          DB_NAME: configService.get('DB_NAME'),
+        });
+        return {
+          type: 'postgres',
+          host: configService.get('DB_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5432),
+          username: configService.get('DB_USERNAME', 'stackly'),
+          password: configService.get('DB_PASSWORD', 'stackly_dev_password'),
+          database: configService.get('DB_NAME', 'stackly'),
+          autoLoadEntities: true,
+          synchronize: configService.get('NODE_ENV') !== 'production',
+          entities: [User, Board, Column, Card, Schedule, RecurringSchedule, BoardMember],
+          logging: configService.get('NODE_ENV') === 'development',
+        };
+      },
     }),
     AuthModule,
     KanbanModule,

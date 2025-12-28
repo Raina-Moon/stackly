@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: stackly
       POSTGRES_PASSWORD: stackly_dev_password
-      POSTGRES_DB: stackly_db
+      POSTGRES_DB: stackly
     ports:
       - "5432:5432"
     volumes:
@@ -22,7 +22,7 @@ services:
     container_name: stackly-pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@stackly.local
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:

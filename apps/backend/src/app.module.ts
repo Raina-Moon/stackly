@@ -21,15 +21,7 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        console.log('[DB ENV CHECK]', {
-          DB_HOST: configService.get('DB_HOST'),
-          DB_PORT: configService.get('DB_PORT'),
-          DB_USERNAME: configService.get('DB_USERNAME'),
-          DB_PASSWORD: configService.get('DB_PASSWORD'),
-          DB_NAME: configService.get('DB_NAME'),
-        });
-        return {
+      useFactory: (configService: ConfigService) => ({
           type: 'postgres',
           host: configService.get('DB_HOST', 'localhost'),
           port: configService.get<number>('DB_PORT', 5432),
@@ -40,8 +32,7 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
           synchronize: configService.get('NODE_ENV') !== 'production',
           entities: [User, Board, Column, Card, Schedule, RecurringSchedule, BoardMember],
           logging: configService.get('NODE_ENV') === 'development',
-        };
-      },
+      }),
     }),
     AuthModule,
     KanbanModule,

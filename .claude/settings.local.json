@@ -7,7 +7,8 @@
       "Bash(cat:*)",
       "Bash(docker-compose up:*)",
       "Bash(yarn build)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(yarn add:*)"
     ]
   }
 }

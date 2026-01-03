@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 interface LoginModalProps {
@@ -34,7 +35,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white text-center">
-          <h2 className="text-2xl font-bold">Stackly</h2>
+          <Image src="/images/stackly_logo.png" alt="Stackly Logo" width={100} height={100} className='mx-auto'/>
           <p className="mt-2 opacity-90">로그인이 필요합니다</p>
         </div>
 
@@ -69,16 +70,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </button>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 pb-6 text-center text-sm text-gray-500">
-          나중에 하기
-          <button
-            onClick={onClose}
-            className="ml-1 text-gray-700 hover:text-gray-900 underline"
-          >
-            닫기
-          </button>
-        </div>
       </div>
     </div>
   );

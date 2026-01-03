@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRegister } from '@/hooks/useRegister';
 import EmailStep from '@/components/auth/register/EmailStep';
 import VerifyStep from '@/components/auth/register/VerifyStep';
@@ -31,9 +32,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-blue-600">Stackly</h1>
-          </Link>
+          <Image src="/images/stackly_logo.png" alt="Stackly Logo" width={100} height={100} />
         </div>
 
         {/* Card */}

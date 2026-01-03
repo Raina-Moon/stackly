@@ -1,7 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import LoginModal from '../auth/LoginModal';
 
 const menuItems = [
   { name: '홈', href: '/', icon: 'home' },
@@ -36,12 +39,13 @@ const icons: Record<string, JSX.Element> = {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
       {/* Logo */}
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-blue-400">Stackly</h1>
+        <Image src="/images/stackly_logo.png" alt="Stackly Logo" width={100} height={100} />
       </div>
 
       {/* Navigation */}
@@ -70,7 +74,10 @@ export default function Sidebar() {
 
       {/* User section */}
       <div className="p-4 border-t border-gray-800">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+        <button 
+          onClick={() => setIsLoginModalOpen(true)}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+        >
           <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -79,6 +86,12 @@ export default function Sidebar() {
           <span>로그인</span>
         </button>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
     </aside>
   );
 }

@@ -1,7 +1,8 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Controller, Post, Body, HttpCode, HttpStatus, Req, Headers } from '@nestjs/common';
+import { Request } from 'express';
 import { EmailService } from '../email.service';
 import { UserService } from '../services/user.service';
+import { AuthService } from '../services/auth.service';
 
 class SendCodeDto {
   email: string;
@@ -29,12 +30,20 @@ class LoginDto {
   password: string;
 }
 
+class RefreshDto {
+  refreshToken: string;
+}
+
+class LogoutDto {
+  refreshToken: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly emailService: EmailService,
     private readonly userService: UserService,
-    private readonly jwtService: JwtService,
+    private readonly authService: AuthService,
   ) {}
 
   @Post('send-code')
@@ -115,7 +124,11 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto) {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Headers('user-agent') userAgent: string,
+  ) {
     // 이메일로 사용자 찾기
     const user = await this.userService.findByEmail(dto.email);
     if (!user) {
@@ -131,14 +144,21 @@ export class AuthController {
     // 마지막 로그인 시간 업데이트
     await this.userService.updateLastLogin(user.id);
 
-    // JWT 토큰 생성
-    const payload = { sub: user.id, email: user.email, nickname: user.nickname };
-    const accessToken = this.jwtService.sign(payload);
+    // IP 주소 추출
+    const ipAddress = req.ip || req.socket?.remoteAddress || 'unknown';
+
+    // Access Token & Refresh Token 생성
+    const tokens = await this.authService.generateTokens(user, {
+      userAgent,
+      ipAddress,
+    });
 
     return {
       success: true,
       message: '로그인 성공',
-      accessToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
       user: {
         id: user.id,
         email: user.email,
@@ -148,5 +168,72 @@ export class AuthController {
         avatar: user.avatar,
       },
     };
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Body() dto: RefreshDto,
+    @Req() req: Request,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    // Refresh Token 검증
+    const storedToken = await this.authService.validateRefreshToken(dto.refreshToken);
+    if (!storedToken) {
+      return { success: false, message: '유효하지 않은 리프레시 토큰입니다' };
+    }
+
+    // 기존 Refresh Token 폐기
+    await this.authService.revokeRefreshToken(dto.refreshToken);
+
+    // IP 주소 추출
+    const ipAddress = req.ip || req.socket?.remoteAddress || 'unknown';
+
+    // 새로운 토큰 발급
+    const tokens = await this.authService.generateTokens(storedToken.user, {
+      userAgent,
+      ipAddress,
+    });
+
+    return {
+      success: true,
+      message: '토큰 갱신 성공',
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
+    };
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Body() dto: LogoutDto) {
+    // Refresh Token 폐기
+    const revoked = await this.authService.revokeRefreshToken(dto.refreshToken);
+
+    if (!revoked) {
+      return { success: false, message: '이미 로그아웃되었거나 유효하지 않은 토큰입니다' };
+    }
+
+    return { success: true, message: '로그아웃 성공' };
+  }
+
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  async logoutAll(@Headers('authorization') auth: string) {
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return { success: false, message: '인증이 필요합니다' };
+    }
+
+    const token = auth.replace('Bearer ', '');
+    const payload = this.authService.verifyAccessToken(token);
+
+    if (!payload) {
+      return { success: false, message: '유효하지 않은 토큰입니다' };
+    }
+
+    // 해당 사용자의 모든 Refresh Token 폐기
+    await this.authService.revokeAllUserTokens(payload.sub);
+
+    return { success: true, message: '모든 기기에서 로그아웃되었습니다' };
   }
 }

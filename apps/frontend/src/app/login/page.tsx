@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { saveAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -34,14 +35,16 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        // JWT 토큰 저장
-        if (rememberMe) {
-          localStorage.setItem('accessToken', data.accessToken);
-          localStorage.setItem('user', JSON.stringify(data.user));
-        } else {
-          sessionStorage.setItem('accessToken', data.accessToken);
-          sessionStorage.setItem('user', JSON.stringify(data.user));
-        }
+        // 토큰 및 사용자 정보 저장
+        saveAuth(
+          {
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            expiresIn: data.expiresIn,
+          },
+          data.user,
+          rememberMe
+        );
 
         // 메인 페이지로 이동
         router.push('/');

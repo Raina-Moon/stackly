@@ -162,4 +162,4 @@ yarn dev
 
 ## License
 
-Private And Just For Fun
+Private

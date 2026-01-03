@@ -14,6 +14,8 @@ export function useRegister() {
   // Form states
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [nicknameAvailable, setNicknameAvailable] = useState<boolean | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
@@ -77,7 +79,45 @@ export function useRegister() {
     }
   };
 
+  const checkNickname = async () => {
+    if (nickname.length < 2 || nickname.length > 20) {
+      setError('닉네임은 2~20자여야 합니다');
+      setNicknameAvailable(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_URL}/auth/check-nickname`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname }),
+      });
+      const data = await res.json();
+
+      setNicknameAvailable(data.available);
+      if (!data.available) {
+        setError(data.message);
+      }
+    } catch {
+      setError('서버 연결에 실패했습니다');
+      setNicknameAvailable(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const register = async () => {
+    if (!nickname || nickname.length < 2) {
+      setError('닉네임을 입력해주세요 (2자 이상)');
+      return;
+    }
+    if (nicknameAvailable !== true) {
+      setError('닉네임 중복확인을 해주세요');
+      return;
+    }
     if (!firstName) {
       setError('이름을 입력해주세요');
       return;
@@ -98,7 +138,7 @@ export function useRegister() {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, firstName, lastName }),
+        body: JSON.stringify({ email, password, nickname, firstName, lastName }),
       });
       const data = await res.json();
 
@@ -117,6 +157,12 @@ export function useRegister() {
 
   const goBack = () => setStep('email');
 
+  // 닉네임이 변경되면 중복확인 상태 리셋
+  const handleSetNickname = (value: string) => {
+    setNickname(value);
+    setNicknameAvailable(null);
+  };
+
   return {
     step,
     isLoading,
@@ -125,6 +171,10 @@ export function useRegister() {
     setEmail,
     code,
     setCode,
+    nickname,
+    setNickname: handleSetNickname,
+    nicknameAvailable,
+    checkNickname,
     firstName,
     setFirstName,
     lastName,

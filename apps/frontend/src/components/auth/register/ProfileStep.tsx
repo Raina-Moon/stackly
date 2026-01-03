@@ -1,6 +1,10 @@
 'use client';
 
 interface ProfileStepProps {
+  nickname: string;
+  setNickname: (nickname: string) => void;
+  nicknameAvailable: boolean | null;
+  checkNickname: () => void;
   firstName: string;
   setFirstName: (name: string) => void;
   lastName: string;
@@ -15,6 +19,10 @@ interface ProfileStepProps {
 }
 
 export default function ProfileStep({
+  nickname,
+  setNickname,
+  nicknameAvailable,
+  checkNickname,
   firstName,
   setFirstName,
   lastName,
@@ -36,6 +44,43 @@ export default function ProfileStep({
           </svg>
         </div>
         <p className="text-gray-600">이메일 인증 완료!</p>
+      </div>
+
+      <div>
+        <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-1">
+          닉네임 *
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            id="nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            className={`flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              nicknameAvailable === true
+                ? 'border-green-500'
+                : nicknameAvailable === false
+                  ? 'border-red-500'
+                  : 'border-gray-300'
+            }`}
+            placeholder="2~20자"
+            disabled={isLoading}
+          />
+          <button
+            type="button"
+            onClick={checkNickname}
+            disabled={isLoading || nickname.length < 2}
+            className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            중복확인
+          </button>
+        </div>
+        {nicknameAvailable === true && (
+          <p className="text-green-600 text-sm mt-1">사용 가능한 닉네임입니다</p>
+        )}
+        {nicknameAvailable === false && (
+          <p className="text-red-500 text-sm mt-1">이미 사용 중인 닉네임입니다</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

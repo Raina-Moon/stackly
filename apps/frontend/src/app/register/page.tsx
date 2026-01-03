@@ -18,6 +18,7 @@ export default function RegisterPage() {
     step, isLoading, error,
     email, setEmail,
     code, setCode,
+    nickname, setNickname, nicknameAvailable, checkNickname,
     firstName, setFirstName,
     lastName, setLastName,
     password, setPassword,
@@ -81,6 +82,10 @@ export default function RegisterPage() {
 
           {step === 'profile' && (
             <ProfileStep
+              nickname={nickname}
+              setNickname={setNickname}
+              nicknameAvailable={nicknameAvailable}
+              checkNickname={checkNickname}
               firstName={firstName}
               setFirstName={setFirstName}
               lastName={lastName}

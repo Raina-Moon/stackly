@@ -26,10 +26,14 @@ export class User {
   @Column({ type: 'varchar', length: 255 })
   password: string; // Should be hashed (bcrypt)
 
+  @Column({ type: 'varchar', length: 50, unique: true })
+  @Index('idx_user_nickname')
+  nickname: string;
+
   @Column({ type: 'varchar', length: 100 })
   firstName: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   lastName: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

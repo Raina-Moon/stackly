@@ -25,17 +25,31 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    // TODO: 실제 로그인 API 연동
     try {
-      // 임시 로그인 로직
-      console.log('Login attempt:', { email, password, rememberMe });
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
 
-      // 로그인 성공 시 메인 페이지로 이동
-      // router.push('/');
+      if (data.success) {
+        // JWT 토큰 저장
+        if (rememberMe) {
+          localStorage.setItem('accessToken', data.accessToken);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        } else {
+          sessionStorage.setItem('accessToken', data.accessToken);
+          sessionStorage.setItem('user', JSON.stringify(data.user));
+        }
 
-      setError('로그인 기능은 아직 구현 중입니다');
+        // 메인 페이지로 이동
+        router.push('/');
+      } else {
+        setError(data.message);
+      }
     } catch {
-      setError('로그인에 실패했습니다');
+      setError('서버 연결에 실패했습니다');
     } finally {
       setIsLoading(false);
     }

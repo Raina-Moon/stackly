@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User } from '../../../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -13,16 +14,40 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const existingUser = await this.userRepository.findOne({
+    // 이메일 중복 검사
+    const existingEmail = await this.userRepository.findOne({
       where: { email: createUserDto.email },
     });
-
-    if (existingUser) {
+    if (existingEmail) {
       throw new ConflictException('이미 등록된 이메일입니다.');
     }
 
-    const user = this.userRepository.create(createUserDto);
+    // 닉네임 중복 검사
+    const existingNickname = await this.userRepository.findOne({
+      where: { nickname: createUserDto.nickname },
+    });
+    if (existingNickname) {
+      throw new ConflictException('이미 사용 중인 닉네임입니다.');
+    }
+
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    const user = this.userRepository.create({
+      ...createUserDto,
+      password: hashedPassword,
+    });
     return this.userRepository.save(user);
+  }
+
+  async findByNickname(nickname: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { nickname, deletedAt: null },
+    });
+  }
+
+  async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+    return bcrypt.compare(plainPassword, hashedPassword);
   }
 
   async findAll(skip = 0, take = 10): Promise<{ data: User[]; total: number }> {

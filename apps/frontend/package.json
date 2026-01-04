@@ -10,6 +10,7 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.16",
     "next": "^14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

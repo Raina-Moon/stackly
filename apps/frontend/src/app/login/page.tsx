@@ -1,19 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { saveAuth } from '@/lib/auth';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 이미 로그인된 경우 메인 페이지로 리다이렉트
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,37 +33,25 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
+    const result = await login(email, password, rememberMe);
 
-      if (data.success) {
-        // 토큰 및 사용자 정보 저장
-        saveAuth(
-          {
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-            expiresIn: data.expiresIn,
-          },
-          data.user,
-          rememberMe
-        );
-
-        // 메인 페이지로 이동
-        router.push('/');
-      } else {
-        setError(data.message);
-      }
-    } catch {
-      setError('서버 연결에 실패했습니다');
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      router.push('/');
+    } else {
+      setError(result.message);
     }
+
+    setIsLoading(false);
   };
+
+  // 인증 상태 로딩 중
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">

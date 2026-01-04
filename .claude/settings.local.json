@@ -8,7 +8,9 @@
       "Bash(docker-compose up:*)",
       "Bash(yarn build)",
       "Bash(tree:*)",
-      "Bash(yarn add:*)"
+      "Bash(yarn add:*)",
+      "Bash(yarn migration:generate:*)",
+      "Bash(npx typeorm-ts-node-commonjs:*)"
     ]
   }
 }

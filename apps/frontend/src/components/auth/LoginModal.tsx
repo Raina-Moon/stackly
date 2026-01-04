@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginSuccess?: () => void;
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {

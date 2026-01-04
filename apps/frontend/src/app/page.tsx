@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import BoardCard from '@/components/dashboard/BoardCard';
 import TodaySchedule from '@/components/dashboard/TodaySchedule';
 import LoginModal from '@/components/auth/LoginModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 데모 보드 데이터
 const demoBoards = [
@@ -32,11 +34,12 @@ const demoBoards = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isLoggedIn] = useState(false); // 로그인 상태 (나중에 실제 인증으로 교체)
 
   const handleProtectedAction = (action: string) => {
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       setIsLoginModalOpen(true);
       return;
     }
@@ -44,15 +47,26 @@ export default function Home() {
     console.log('Performing action:', action);
   };
 
+  // 로딩 중일 때
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       {/* Welcome section */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          {isLoggedIn ? '안녕하세요!' : '환영합니다!'}
+          {isAuthenticated ? `안녕하세요, ${user?.nickname}님!` : '환영합니다!'}
         </h1>
         <p className="text-gray-500 mt-1">
-          {isLoggedIn
+          {isAuthenticated
             ? '오늘도 생산적인 하루 되세요'
             : '로그인하여 보드를 관리하세요'}
         </p>
@@ -100,6 +114,10 @@ export default function Home() {
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={() => {
+          setIsLoginModalOpen(false);
+          router.refresh();
+        }}
       />
     </MainLayout>
   );

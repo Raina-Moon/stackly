@@ -49,13 +49,18 @@ export class AuthController {
   @Post('send-code')
   @HttpCode(HttpStatus.OK)
   async sendVerificationCode(@Body() dto: SendCodeDto) {
+    console.log(`[AuthController] send-code request for: ${dto.email}`);
+
     // 이미 가입된 이메일인지 확인
     const existingUser = await this.userService.findByEmail(dto.email);
     if (existingUser) {
+      console.log(`[AuthController] Email already registered: ${dto.email}`);
       return { success: false, message: '이미 가입된 이메일입니다' };
     }
 
-    return this.emailService.sendVerificationCode(dto.email);
+    const result = await this.emailService.sendVerificationCode(dto.email);
+    console.log(`[AuthController] sendVerificationCode result:`, result);
+    return result;
   }
 
   @Post('verify-code')

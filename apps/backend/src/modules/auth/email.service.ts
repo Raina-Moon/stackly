@@ -23,6 +23,8 @@ export class EmailService {
   }
 
   async sendVerificationCode(email: string): Promise<{ success: boolean; message: string }> {
+    console.log(`[EmailService] sendVerificationCode called for: ${email}`);
+
     const code = this.generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10분 후 만료
 
@@ -34,6 +36,7 @@ export class EmailService {
     });
 
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    console.log(`[EmailService] API Key exists: ${!!apiKey}`);
 
     // API 키가 없으면 개발 모드로 콘솔 출력
     if (!apiKey) {
@@ -42,7 +45,8 @@ export class EmailService {
     }
 
     try {
-      await this.resend.emails.send({
+      console.log(`[EmailService] Sending email via Resend to: ${email}`);
+      const result = await this.resend.emails.send({
         from: 'Stackly <onboarding@resend.dev>',
         to: email,
         subject: '[Stackly] 이메일 인증코드',
@@ -70,9 +74,12 @@ export class EmailService {
         `,
       });
 
+      console.log(`[EmailService] Resend API response:`, result);
+      console.log(`[EmailService] Verification code: ${code}`);
       return { success: true, message: '인증코드가 발송되었습니다' };
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error('[EmailService] Failed to send email:', error);
+      console.log(`[EmailService] Falling back - Verification code for ${email}: ${code}`);
       return { success: false, message: '이메일 발송에 실패했습니다' };
     }
   }

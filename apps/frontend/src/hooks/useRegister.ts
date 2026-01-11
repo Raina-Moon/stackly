@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/contexts/ToastContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -17,6 +18,7 @@ export type RegisterStep = 'email' | 'verify' | 'profile';
 
 export function useRegister() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [step, setStep] = useState<RegisterStep>('email');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -153,7 +155,7 @@ export function useRegister() {
       const data = await res.json();
 
       if (data.success) {
-        alert('회원가입이 완료되었습니다! 로그인해주세요.');
+        showToast('회원가입이 완료되었습니다! 로그인해주세요.', 'success');
         router.push('/login');
       } else {
         setError(data.message);

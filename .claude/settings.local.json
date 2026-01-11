@@ -10,7 +10,9 @@
       "Bash(tree:*)",
       "Bash(yarn add:*)",
       "Bash(yarn migration:generate:*)",
-      "Bash(npx typeorm-ts-node-commonjs:*)"
+      "Bash(npx typeorm-ts-node-commonjs:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

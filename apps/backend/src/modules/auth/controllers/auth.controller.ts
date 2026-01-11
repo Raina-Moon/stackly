@@ -25,6 +25,26 @@ class RegisterDto {
   lastName?: string;
 }
 
+// 비밀번호 유효성 검사
+function validatePassword(password: string): { valid: boolean; message: string } {
+  if (!password || password.length < 8) {
+    return { valid: false, message: '비밀번호는 8자 이상이어야 합니다' };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, message: '비밀번호에 대문자가 포함되어야 합니다' };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, message: '비밀번호에 소문자가 포함되어야 합니다' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: '비밀번호에 숫자가 포함되어야 합니다' };
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return { valid: false, message: '비밀번호에 특수문자가 포함되어야 합니다' };
+  }
+  return { valid: true, message: '' };
+}
+
 class LoginDto {
   email: string;
   password: string;
@@ -90,6 +110,12 @@ export class AuthController {
     // 이메일 인증 여부 확인
     if (!this.emailService.isEmailVerified(dto.email)) {
       return { success: false, message: '이메일 인증이 필요합니다' };
+    }
+
+    // 비밀번호 유효성 검사
+    const passwordValidation = validatePassword(dto.password);
+    if (!passwordValidation.valid) {
+      return { success: false, message: passwordValidation.message };
     }
 
     // 닉네임 중복 검사

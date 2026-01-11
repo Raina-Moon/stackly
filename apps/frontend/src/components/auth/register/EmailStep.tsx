@@ -1,5 +1,7 @@
 'use client';
 
+import Input from '@/components/ui/Input';
+
 interface EmailStepProps {
   email: string;
   setEmail: (email: string) => void;
@@ -11,22 +13,16 @@ interface EmailStepProps {
 export default function EmailStep({ email, setEmail, onSubmit, isLoading, error }: EmailStepProps) {
   return (
     <div className="p-6 space-y-4">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          이메일
-        </label>
-        <input
-          type="email"
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="example@email.com"
-          disabled={isLoading}
-        />
-      </div>
-
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <Input
+        type="email"
+        id="email"
+        label="이메일"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="example@email.com"
+        disabled={isLoading}
+        error={error}
+      />
 
       <button
         onClick={onSubmit}
@@ -36,7 +32,7 @@ export default function EmailStep({ email, setEmail, onSubmit, isLoading, error 
         {isLoading ? '발송 중...' : '인증코드 받기'}
       </button>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm" style={{ color: 'var(--gray-500)' }}>
         입력한 이메일로 6자리 인증코드가 발송됩니다
       </p>
     </div>

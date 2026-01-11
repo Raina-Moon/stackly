@@ -3,6 +3,16 @@ import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// 비밀번호 유효성 검사
+function isPasswordValid(password: string) {
+  const minLength = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
+}
+
 export type RegisterStep = 'email' | 'verify' | 'profile';
 
 export function useRegister() {
@@ -122,8 +132,8 @@ export function useRegister() {
       setError('이름을 입력해주세요');
       return;
     }
-    if (password.length < 6) {
-      setError('비밀번호는 6자 이상이어야 합니다');
+    if (!isPasswordValid(password)) {
+      setError('비밀번호는 8자 이상, 대소문자/숫자/특수문자를 포함해야 합니다');
       return;
     }
     if (password !== confirmPassword) {

@@ -35,6 +35,13 @@ export class Board {
   @Column({ type: 'boolean', default: false })
   isArchived: boolean;
 
+  @Column({ type: 'varchar', length: 36, unique: true })
+  @Index('idx_board_invite_code')
+  inviteCode: string;
+
+  @Column({ type: 'boolean', default: true })
+  isPrivate: boolean;
+
   @Column({ type: 'uuid' })
   @Index('idx_board_owner')
   ownerId: string;

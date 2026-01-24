@@ -10,12 +10,14 @@ interface VerificationCode {
 
 @Injectable()
 export class EmailService {
-  private resend: Resend;
+  private resend: Resend | null = null;
   private verificationCodes: Map<string, VerificationCode> = new Map();
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    this.resend = new Resend(apiKey);
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
+    }
   }
 
   generateCode(): string {
@@ -35,11 +37,10 @@ export class EmailService {
       verified: false,
     });
 
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    console.log(`[EmailService] API Key exists: ${!!apiKey}`);
+    console.log(`[EmailService] Resend configured: ${!!this.resend}`);
 
     // API 키가 없으면 개발 모드로 콘솔 출력
-    if (!apiKey) {
+    if (!this.resend) {
       console.log(`[DEV MODE] Verification code for ${email}: ${code}`);
       return { success: true, message: '인증코드가 발송되었습니다 (개발 모드: 콘솔 확인)' };
     }

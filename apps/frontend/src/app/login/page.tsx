@@ -20,6 +20,22 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
+      // Check for pending invite
+      const pendingInvite = sessionStorage.getItem('pendingInvite');
+      if (pendingInvite) {
+        sessionStorage.removeItem('pendingInvite');
+        router.push(`/invite/${pendingInvite}`);
+        return;
+      }
+
+      // Check for redirect URL
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+        return;
+      }
+
       router.push('/');
     }
   }, [isAuthenticated, authLoading, router]);
@@ -39,7 +55,19 @@ export default function LoginPage() {
 
     if (result.success) {
       showToast('로그인 성공!', 'success');
-      router.push('/');
+
+      // Check for pending invite
+      const pendingInvite = sessionStorage.getItem('pendingInvite');
+      if (pendingInvite) {
+        sessionStorage.removeItem('pendingInvite');
+        router.push(`/invite/${pendingInvite}`);
+        return;
+      }
+
+      // Check for redirect URL
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      router.push(redirect || '/');
     } else {
       setError(result.message);
     }

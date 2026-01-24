@@ -1,26 +1,58 @@
 'use client';
 
+import { useDroppable } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Column as ColumnType, Card as CardType } from '@/hooks/useBoard';
+import { createDndId } from '@/utils/dnd';
 import Card from './Card';
+import SortableCard from './SortableCard';
+import type { DragHandleProps } from './SortableColumn';
 
 interface ColumnProps {
   column: ColumnType;
   cards: CardType[];
   onCardClick?: (card: CardType) => void;
   onAddCard?: () => void;
+  dragHandleProps?: DragHandleProps;
 }
 
-export default function Column({ column, cards, onCardClick, onAddCard }: ColumnProps) {
+export default function Column({
+  column,
+  cards,
+  onCardClick,
+  onAddCard,
+  dragHandleProps,
+}: ColumnProps) {
   const columnCards = cards
     .filter((card) => card.columnId === column.id)
     .sort((a, b) => a.position - b.position);
 
   const isAtWipLimit = column.wipLimit && columnCards.length >= column.wipLimit;
 
+  // Droppable for cards
+  const { setNodeRef, isOver } = useDroppable({
+    id: createDndId('column', column.id),
+    data: {
+      type: 'column',
+      column,
+    },
+  });
+
+  // Card IDs for SortableContext
+  const cardIds = columnCards.map((card) => createDndId('card', card.id));
+
   return (
     <div className="flex flex-col w-72 min-w-[288px] bg-gray-50 rounded-xl">
       {/* Column header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+      <div
+        ref={dragHandleProps?.ref as React.Ref<HTMLDivElement>}
+        {...(dragHandleProps?.attributes || {})}
+        {...(dragHandleProps?.listeners || {})}
+        className="flex items-center justify-between px-3 py-2 border-b border-gray-200 cursor-grab"
+      >
         <div className="flex items-center gap-2">
           {column.color && (
             <div
@@ -36,7 +68,10 @@ export default function Column({ column, cards, onCardClick, onAddCard }: Column
         </div>
 
         <button
-          onClick={onAddCard}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddCard?.();
+          }}
           disabled={!!isAtWipLimit}
           className={`p-1 rounded hover:bg-gray-200 transition-colors ${
             isAtWipLimit ? 'opacity-50 cursor-not-allowed' : ''
@@ -50,18 +85,27 @@ export default function Column({ column, cards, onCardClick, onAddCard }: Column
       </div>
 
       {/* Cards container */}
-      <div className="flex-1 p-2 space-y-2 overflow-y-auto min-h-[200px] max-h-[calc(100vh-200px)]">
-        {columnCards.map((card) => (
-          <Card
-            key={card.id}
-            card={card}
-            onClick={() => onCardClick?.(card)}
-          />
-        ))}
+      <div
+        ref={setNodeRef}
+        className={`flex-1 p-2 space-y-2 overflow-y-auto min-h-[200px] max-h-[calc(100vh-200px)] transition-colors ${
+          isOver ? 'bg-blue-50' : ''
+        }`}
+      >
+        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+          {columnCards.map((card) => (
+            <SortableCard key={card.id} cardId={card.id}>
+              <Card card={card} onClick={() => onCardClick?.(card)} />
+            </SortableCard>
+          ))}
+        </SortableContext>
 
         {columnCards.length === 0 && (
-          <div className="flex items-center justify-center h-24 text-gray-400 text-sm">
-            카드가 없습니다
+          <div
+            className={`flex items-center justify-center h-24 text-sm transition-colors ${
+              isOver ? 'text-blue-500 bg-blue-100 rounded-lg' : 'text-gray-400'
+            }`}
+          >
+            {isOver ? '여기에 놓으세요' : '카드가 없습니다'}
           </div>
         )}
       </div>

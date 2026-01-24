@@ -1,8 +1,30 @@
 'use client';
 
-import { useState } from 'react';
-import { Board, Card as CardType } from '@/hooks/useBoard';
+import { useState, useCallback, useMemo } from 'react';
+import {
+  DndContext,
+  DragStartEvent,
+  DragOverEvent,
+  DragEndEvent,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { useQueryClient } from '@tanstack/react-query';
+import { Board, Card as CardType, Column as ColumnType } from '@/hooks/useBoard';
+import { useReorderColumns } from '@/hooks/useColumn';
+import { useMoveCard, useReorderCards } from '@/hooks/useCard';
+import { parseDndId, createDndId, arrayMove } from '@/utils/dnd';
 import Column from './Column';
+import SortableColumn from './SortableColumn';
+import DragOverlay from './DragOverlay';
 import InviteModal from './InviteModal';
 
 interface BoardViewProps {
@@ -11,9 +33,291 @@ interface BoardViewProps {
 
 export default function BoardView({ board }: BoardViewProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [activeCard, setActiveCard] = useState<CardType | null>(null);
+  const [activeColumn, setActiveColumn] = useState<ColumnType | null>(null);
 
-  const sortedColumns = [...(board.columns || [])].sort((a, b) => a.position - b.position);
-  const cards = board.cards || [];
+  const queryClient = useQueryClient();
+  const reorderColumns = useReorderColumns();
+  const moveCard = useMoveCard();
+  const reorderCards = useReorderCards();
+
+  const sortedColumns = useMemo(
+    () => [...(board.columns || [])].sort((a, b) => a.position - b.position),
+    [board.columns]
+  );
+  const cards = useMemo(() => board.cards || [], [board.cards]);
+
+  // Column IDs for SortableContext
+  const columnIds = sortedColumns.map((col) => createDndId('column', col.id));
+
+  // Sensors for drag detection
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before activating
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Find card by ID
+  const findCard = useCallback(
+    (cardId: string) => cards.find((c) => c.id === cardId),
+    [cards]
+  );
+
+  // Find column by ID
+  const findColumn = useCallback(
+    (columnId: string) => sortedColumns.find((c) => c.id === columnId),
+    [sortedColumns]
+  );
+
+  // Handle drag start
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { type, id } = parseDndId(event.active.id);
+
+      if (type === 'card') {
+        const card = findCard(id);
+        if (card) setActiveCard(card);
+      } else if (type === 'column') {
+        const column = findColumn(id);
+        if (column) setActiveColumn(column);
+      }
+    },
+    [findCard, findColumn]
+  );
+
+  // Handle drag over (for real-time feedback when moving cards between columns)
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { active, over } = event;
+      if (!over) return;
+
+      const { type: activeType, id: activeId } = parseDndId(active.id);
+      const { type: overType, id: overId } = parseDndId(over.id);
+
+      // Only handle card dragging
+      if (activeType !== 'card') return;
+
+      const activeCard = findCard(activeId);
+      if (!activeCard) return;
+
+      // Determine target column
+      let targetColumnId: string | null = null;
+
+      if (overType === 'column') {
+        targetColumnId = overId;
+      } else if (overType === 'card') {
+        const overCard = findCard(overId);
+        if (overCard) {
+          targetColumnId = overCard.columnId;
+        }
+      }
+
+      // If moving to a different column, update local state optimistically
+      if (targetColumnId && targetColumnId !== activeCard.columnId) {
+        // Check WIP limit
+        const targetColumn = findColumn(targetColumnId);
+        const targetColumnCards = cards.filter((c) => c.columnId === targetColumnId);
+
+        if (targetColumn?.wipLimit && targetColumnCards.length >= targetColumn.wipLimit) {
+          // WIP limit reached, don't allow drop
+          return;
+        }
+
+        // Optimistic update for visual feedback
+        queryClient.setQueryData<Board>(['board', board.id], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            cards: old.cards?.map((c) =>
+              c.id === activeId ? { ...c, columnId: targetColumnId! } : c
+            ),
+          };
+        });
+      }
+    },
+    [findCard, findColumn, cards, board.id, queryClient]
+  );
+
+  // Handle drag end
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      setActiveCard(null);
+      setActiveColumn(null);
+
+      if (!over) return;
+
+      const { type: activeType, id: activeId } = parseDndId(active.id);
+      const { type: overType, id: overId } = parseDndId(over.id);
+
+      // Handle column reordering
+      if (activeType === 'column') {
+        if (activeId !== overId) {
+          const oldIndex = sortedColumns.findIndex((c) => c.id === activeId);
+          const newIndex = sortedColumns.findIndex((c) => c.id === overId);
+
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const newColumns = arrayMove(sortedColumns, oldIndex, newIndex);
+
+            // Optimistic update
+            queryClient.setQueryData<Board>(['board', board.id], (old) => {
+              if (!old) return old;
+              return {
+                ...old,
+                columns: newColumns.map((col, index) => ({
+                  ...col,
+                  position: index,
+                })),
+              };
+            });
+
+            // API call
+            reorderColumns.mutate({
+              boardId: board.id,
+              columnIds: newColumns.map((c) => c.id),
+            });
+          }
+        }
+        return;
+      }
+
+      // Handle card movement
+      if (activeType === 'card') {
+        const activeCard = findCard(activeId);
+        if (!activeCard) return;
+
+        // Determine target column and position
+        let targetColumnId: string;
+        let targetPosition: number;
+
+        if (overType === 'column') {
+          // Dropping on empty area of a column
+          targetColumnId = overId;
+          const columnCards = cards.filter((c) => c.columnId === overId);
+          targetPosition = columnCards.length; // Add to end
+        } else if (overType === 'card') {
+          // Dropping on another card
+          const overCard = findCard(overId);
+          if (!overCard) return;
+
+          targetColumnId = overCard.columnId;
+          const columnCards = cards
+            .filter((c) => c.columnId === targetColumnId)
+            .sort((a, b) => a.position - b.position);
+
+          const overIndex = columnCards.findIndex((c) => c.id === overId);
+          targetPosition = overIndex;
+        } else {
+          return;
+        }
+
+        // Check WIP limit
+        const targetColumn = findColumn(targetColumnId);
+        if (targetColumnId !== activeCard.columnId) {
+          const targetColumnCards = cards.filter((c) => c.columnId === targetColumnId);
+          if (targetColumn?.wipLimit && targetColumnCards.length >= targetColumn.wipLimit) {
+            // Revert optimistic update
+            queryClient.invalidateQueries({ queryKey: ['board', board.id] });
+            alert('WIP 제한에 도달하여 카드를 이동할 수 없습니다.');
+            return;
+          }
+        }
+
+        // Same column reordering
+        if (targetColumnId === activeCard.columnId) {
+          const columnCards = cards
+            .filter((c) => c.columnId === targetColumnId)
+            .sort((a, b) => a.position - b.position);
+
+          const oldIndex = columnCards.findIndex((c) => c.id === activeId);
+          const newIndex = columnCards.findIndex((c) => c.id === overId);
+
+          if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+            const newCards = arrayMove(columnCards, oldIndex, newIndex);
+
+            // Optimistic update
+            queryClient.setQueryData<Board>(['board', board.id], (old) => {
+              if (!old) return old;
+              const updatedCards = old.cards?.map((c) => {
+                const newIndex = newCards.findIndex((nc) => nc.id === c.id);
+                if (newIndex !== -1) {
+                  return { ...c, position: newIndex };
+                }
+                return c;
+              });
+              return { ...old, cards: updatedCards };
+            });
+
+            // API call
+            reorderCards.mutate({
+              columnId: targetColumnId,
+              boardId: board.id,
+              cardIds: newCards.map((c) => c.id),
+            });
+          }
+        } else {
+          // Moving to different column
+          // Optimistic update already done in handleDragOver
+
+          // Update position within new column
+          const targetColumnCards = cards
+            .filter((c) => c.columnId === targetColumnId && c.id !== activeId)
+            .sort((a, b) => a.position - b.position);
+
+          // Insert at position
+          const newCardIds = [
+            ...targetColumnCards.slice(0, targetPosition).map((c) => c.id),
+            activeId,
+            ...targetColumnCards.slice(targetPosition).map((c) => c.id),
+          ];
+
+          queryClient.setQueryData<Board>(['board', board.id], (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              cards: old.cards?.map((c) => {
+                if (c.id === activeId) {
+                  return { ...c, columnId: targetColumnId, position: targetPosition };
+                }
+                const newIndex = newCardIds.indexOf(c.id);
+                if (newIndex !== -1 && c.columnId === targetColumnId) {
+                  return { ...c, position: newIndex };
+                }
+                return c;
+              }),
+            };
+          });
+
+          // API call
+          moveCard.mutate({
+            id: activeId,
+            boardId: board.id,
+            data: {
+              columnId: targetColumnId,
+              position: targetPosition,
+            },
+          });
+        }
+      }
+    },
+    [
+      sortedColumns,
+      cards,
+      board.id,
+      findCard,
+      findColumn,
+      queryClient,
+      reorderColumns,
+      reorderCards,
+      moveCard,
+    ]
+  );
 
   const handleCardClick = (card: CardType) => {
     // TODO: Open card detail modal
@@ -74,43 +378,67 @@ export default function BoardView({ board }: BoardViewProps) {
 
       {/* Columns container */}
       <div className="flex-1 overflow-x-auto bg-gray-100">
-        <div className="flex gap-4 p-6 min-h-full">
-          {sortedColumns.length > 0 ? (
-            <>
-              {sortedColumns.map((column) => (
-                <Column
-                  key={column.id}
-                  column={column}
-                  cards={cards}
-                  onCardClick={handleCardClick}
-                  onAddCard={() => handleAddCard(column.id)}
-                />
-              ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex gap-4 p-6 min-h-full">
+            {sortedColumns.length > 0 ? (
+              <>
+                <SortableContext
+                  items={columnIds}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  {sortedColumns.map((column) => (
+                    <SortableColumn key={column.id} columnId={column.id}>
+                      {({ dragHandleProps }) => (
+                        <Column
+                          column={column}
+                          cards={cards}
+                          onCardClick={handleCardClick}
+                          onAddCard={() => handleAddCard(column.id)}
+                          dragHandleProps={dragHandleProps}
+                        />
+                      )}
+                    </SortableColumn>
+                  ))}
+                </SortableContext>
 
-              {/* Add column button */}
-              <button className="flex items-center justify-center w-72 min-w-[288px] h-12 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors text-gray-600 font-medium">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                {/* Add column button */}
+                <button className="flex items-center justify-center w-72 min-w-[288px] h-12 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors text-gray-600 font-medium">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  컬럼 추가
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full py-12 text-gray-500">
+                <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                 </svg>
-                컬럼 추가
-              </button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center w-full py-12 text-gray-500">
-              <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-              </svg>
-              <p className="text-lg font-medium mb-2">아직 컬럼이 없습니다</p>
-              <p className="text-sm mb-4">컬럼을 추가하여 카드를 정리하세요</p>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                첫 번째 컬럼 만들기
-              </button>
-            </div>
-          )}
-        </div>
+                <p className="text-lg font-medium mb-2">아직 컬럼이 없습니다</p>
+                <p className="text-sm mb-4">컬럼을 추가하여 카드를 정리하세요</p>
+                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  첫 번째 컬럼 만들기
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Drag overlay */}
+          <DragOverlay
+            activeCard={activeCard}
+            activeColumn={activeColumn}
+            cards={cards}
+          />
+        </DndContext>
       </div>
 
       {/* Invite Modal */}

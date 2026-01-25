@@ -81,42 +81,74 @@ export function UserAvatar({ user, size = 'md' }: UserAvatarProps) {
     lg: 'w-10 h-10 text-base',
   };
 
+  // Calculate audio-reactive scale (1.0 to 1.3 based on audio level)
+  const audioLevel = user.audioLevel || 0;
+  const scale = user.isInVoice ? 1 + audioLevel * 0.3 : 1;
+  const glowIntensity = audioLevel * 20; // 0 to 20px blur
+
   return (
-    <div
-      className={`${sizeClasses[size]} rounded-full border-2 border-white flex items-center justify-center font-medium text-white relative`}
-      style={{ backgroundColor: bgColor }}
-    >
-      {user.avatar ? (
-        <img
-          src={user.avatar}
-          alt={user.nickname}
-          className="w-full h-full rounded-full object-cover"
+    <div className="relative">
+      {/* Audio-reactive glow ring */}
+      {user.isInVoice && audioLevel > 0.05 && (
+        <div
+          className="absolute inset-0 rounded-full transition-all duration-75"
+          style={{
+            backgroundColor: bgColor,
+            transform: `scale(${scale + 0.2})`,
+            opacity: audioLevel * 0.6,
+            filter: `blur(${glowIntensity}px)`,
+          }}
         />
-      ) : (
-        initials
       )}
 
-      {/* Voice indicator */}
-      {user.isInVoice && (
-        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border border-white flex items-center justify-center">
-          <svg
-            className="w-2 h-2 text-white"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+      {/* Main avatar */}
+      <div
+        className={`${sizeClasses[size]} rounded-full border-2 border-white flex items-center justify-center font-medium text-white relative transition-transform duration-75`}
+        style={{
+          backgroundColor: bgColor,
+          transform: `scale(${scale})`,
+          boxShadow: user.isInVoice && audioLevel > 0.1
+            ? `0 0 ${glowIntensity}px ${bgColor}`
+            : 'none',
+        }}
+      >
+        {user.avatar ? (
+          <img
+            src={user.avatar}
+            alt={user.nickname}
+            className="w-full h-full rounded-full object-cover"
+          />
+        ) : (
+          initials
+        )}
+
+        {/* Voice indicator */}
+        {user.isInVoice && (
+          <div
+            className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border border-white flex items-center justify-center transition-transform duration-75"
+            style={{
+              transform: audioLevel > 0.1 ? `scale(${1 + audioLevel * 0.5})` : 'scale(1)',
+            }}
           >
-            <path
-              fillRule="evenodd"
-              d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-      )}
+            <svg
+              className="w-2 h-2 text-white"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+        )}
 
-      {/* Dragging indicator */}
-      {user.isDragging && !user.isInVoice && (
-        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border border-white" />
-      )}
+        {/* Dragging indicator */}
+        {user.isDragging && !user.isInVoice && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border border-white" />
+        )}
+      </div>
     </div>
   );
 }

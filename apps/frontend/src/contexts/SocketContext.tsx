@@ -149,7 +149,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       sock.on('voice_user_left', (data: { userId: string }) => {
         setVoiceUsers((prev) => prev.filter((id) => id !== data.userId));
         setOnlineUsers((prev) =>
-          prev.map((u) => (u.id === data.userId ? { ...u, isInVoice: false } : u))
+          prev.map((u) => (u.id === data.userId ? { ...u, isInVoice: false, audioLevel: 0 } : u))
+        );
+      });
+
+      // Voice audio level for reactive animations
+      sock.on('voice_audio_level', (data: { userId: string; level: number }) => {
+        setOnlineUsers((prev) =>
+          prev.map((u) => (u.id === data.userId ? { ...u, audioLevel: data.level } : u))
         );
       });
 

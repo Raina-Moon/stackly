@@ -440,4 +440,18 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       });
     }
   }
+
+  @SubscribeMessage('voice_audio_level')
+  async handleVoiceAudioLevel(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { boardId: string; level: number },
+  ): Promise<void> {
+    const user = this.getUser(client);
+
+    // Broadcast audio level to other users in the board
+    client.to(`board:${data.boardId}`).emit('voice_audio_level', {
+      userId: user.id,
+      level: data.level,
+    });
+  }
 }

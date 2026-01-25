@@ -14,6 +14,7 @@ export function VoiceChat({ boardId }: VoiceChatProps) {
     isMuted,
     isLoading,
     error,
+    audioLevel,
     voiceParticipants,
     joinVoice,
     leaveVoice,
@@ -71,23 +72,63 @@ export function VoiceChat({ boardId }: VoiceChatProps) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg border border-green-200">
-      {/* Voice participants */}
+      {/* Voice participants with audio-reactive avatars */}
       <div className="flex -space-x-1">
-        {voiceUsersInfo.slice(0, 3).map((user) => (
-          <div
-            key={user!.id}
-            className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-medium text-white"
-            style={{ backgroundColor: getUserColor(user!.id) }}
-            title={user!.nickname}
-          >
-            {getUserInitials(user!.nickname)}
-          </div>
-        ))}
+        {voiceUsersInfo.slice(0, 3).map((user) => {
+          const userAudioLevel = user!.audioLevel || 0;
+          const scale = 1 + userAudioLevel * 0.3;
+          return (
+            <div
+              key={user!.id}
+              className="relative"
+            >
+              {/* Glow effect when speaking */}
+              {userAudioLevel > 0.05 && (
+                <div
+                  className="absolute inset-0 rounded-full transition-all duration-75"
+                  style={{
+                    backgroundColor: getUserColor(user!.id),
+                    transform: `scale(${scale + 0.3})`,
+                    opacity: userAudioLevel * 0.5,
+                    filter: `blur(${userAudioLevel * 10}px)`,
+                  }}
+                />
+              )}
+              <div
+                className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-medium text-white relative transition-transform duration-75"
+                style={{
+                  backgroundColor: getUserColor(user!.id),
+                  transform: `scale(${scale})`,
+                }}
+                title={user!.nickname}
+              >
+                {getUserInitials(user!.nickname)}
+              </div>
+            </div>
+          );
+        })}
         {voiceUsersInfo.length > 3 && (
           <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs font-medium text-gray-600">
             +{voiceUsersInfo.length - 3}
           </div>
         )}
+      </div>
+
+      {/* Audio level visualizer bars */}
+      <div className="flex items-end gap-0.5 h-4">
+        {[0.2, 0.4, 0.6, 0.8, 1.0].map((threshold, i) => (
+          <div
+            key={i}
+            className="w-1 rounded-full transition-all duration-75"
+            style={{
+              height: `${(i + 1) * 3 + 2}px`,
+              backgroundColor: !isMuted && audioLevel >= threshold
+                ? '#22c55e'
+                : '#d1d5db',
+              opacity: !isMuted && audioLevel >= threshold ? 1 : 0.4,
+            }}
+          />
+        ))}
       </div>
 
       {/* Mute toggle */}

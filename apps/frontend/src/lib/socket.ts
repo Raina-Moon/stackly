@@ -73,6 +73,7 @@ export interface UserPresence {
   isDragging?: boolean;
   dragItem?: { type: 'card' | 'column'; id: string };
   isInVoice?: boolean;
+  audioLevel?: number; // 0-1 representing voice activity level
 }
 
 export interface BoardSyncData {

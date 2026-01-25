@@ -27,10 +27,14 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
 
   const localStreamRef = useRef<MediaStream | null>(null);
   const peersRef = useRef<Map<string, PeerConnection>>(new Map());
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioLevelIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clean up peer connection
   const removePeer = useCallback((peerId: string) => {
@@ -195,6 +199,48 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
     setError(null);
   }, []);
 
+  // Setup audio level detection
+  const setupAudioLevelDetection = useCallback((stream: MediaStream) => {
+    try {
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      microphone.connect(analyser);
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      // Emit audio level periodically
+      audioLevelIntervalRef.current = setInterval(() => {
+        if (!analyserRef.current || isMuted) {
+          setAudioLevel(0);
+          return;
+        }
+
+        analyserRef.current.getByteFrequencyData(dataArray);
+
+        // Calculate average volume (0-255) and normalize to 0-1
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        const normalizedLevel = Math.min(average / 128, 1); // Normalize and cap at 1
+
+        setAudioLevel(normalizedLevel);
+
+        // Emit to socket if speaking (level > threshold)
+        const socket = getSocket();
+        if (socket && boardId && normalizedLevel > 0.05) {
+          socket.emit('voice_audio_level', { boardId, level: normalizedLevel });
+        }
+      }, 50); // Update 20 times per second
+    } catch (err) {
+      console.error('Failed to setup audio level detection:', err);
+    }
+  }, [boardId, isMuted]);
+
   // Join voice chat
   const joinVoice = useCallback(async () => {
     if (!boardId || !isConnected) return;
@@ -216,6 +262,9 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
       localStreamRef.current = stream;
       setIsInVoice(true);
 
+      // Setup audio level detection
+      setupAudioLevelDetection(stream);
+
       // Emit voice join event
       const socket = getSocket();
       if (socket) {
@@ -233,11 +282,23 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [boardId, isConnected]);
+  }, [boardId, isConnected, setupAudioLevelDetection]);
 
   // Leave voice chat
   const leaveVoice = useCallback(() => {
     if (!boardId) return;
+
+    // Stop audio level detection
+    if (audioLevelIntervalRef.current) {
+      clearInterval(audioLevelIntervalRef.current);
+      audioLevelIntervalRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setAudioLevel(0);
 
     // Stop local stream
     if (localStreamRef.current) {
@@ -275,10 +336,17 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
   // Clean up on unmount
   useEffect(() => {
     return () => {
+      if (audioLevelIntervalRef.current) {
+        clearInterval(audioLevelIntervalRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-      peersRef.current.forEach((_, peerId) => {
+      const peers = peersRef.current;
+      peers.forEach((_, peerId) => {
         removePeer(peerId);
       });
     };
@@ -292,6 +360,7 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
     isMuted,
     isLoading,
     error,
+    audioLevel,
     voiceUsers,
     voiceParticipants,
     joinVoice,

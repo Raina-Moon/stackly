@@ -45,6 +45,9 @@ export class BoardMember {
   @Column({ type: 'boolean', default: true })
   canComment: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  isFavorite: boolean;
+
   @CreateDateColumn({ type: 'timestamp' })
   joinedAt: Date;
 

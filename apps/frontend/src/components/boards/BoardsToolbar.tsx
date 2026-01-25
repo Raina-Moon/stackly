@@ -1,9 +1,18 @@
 'use client';
 
+import SearchBar from '@/components/ui/SearchBar';
+import SortDropdown from '@/components/ui/SortDropdown';
+
 export type SortOption = 'name' | 'createdAt' | 'updatedAt';
 export type SortDirection = 'asc' | 'desc';
-export type FilterOption = 'all' | 'owned' | 'shared' | 'archived' | 'templates';
+export type FilterOption = 'all' | 'owned' | 'shared' | 'archived' | 'templates' | 'favorites';
 export type ViewMode = 'grid' | 'list';
+
+const sortOptions = [
+  { value: 'updatedAt' as const, label: '최근 수정' },
+  { value: 'createdAt' as const, label: '생성일' },
+  { value: 'name' as const, label: '이름' },
+];
 
 interface BoardsToolbarProps {
   searchQuery: string;
@@ -35,28 +44,11 @@ export default function BoardsToolbar({
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-6">
       {/* Search */}
-      <div className="relative flex-1">
-        <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-        <input
-          type="text"
-          placeholder="보드 검색..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      </div>
+      <SearchBar
+        value={searchQuery}
+        onChange={onSearchChange}
+        placeholder="보드 검색..."
+      />
 
       {/* Filter */}
       <select
@@ -65,6 +57,7 @@ export default function BoardsToolbar({
         className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
       >
         <option value="all">모든 보드</option>
+        <option value="favorites">즐겨찾기</option>
         <option value="owned">내가 만든 보드</option>
         <option value="shared">공유된 보드</option>
         <option value="archived">보관된 보드</option>
@@ -72,32 +65,13 @@ export default function BoardsToolbar({
       </select>
 
       {/* Sort */}
-      <div className="flex gap-2">
-        <select
-          value={sortBy}
-          onChange={(e) => onSortByChange(e.target.value as SortOption)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-        >
-          <option value="updatedAt">최근 수정</option>
-          <option value="createdAt">생성일</option>
-          <option value="name">이름</option>
-        </select>
-        <button
-          onClick={onSortDirectionToggle}
-          className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          title={sortDirection === 'asc' ? '오름차순' : '내림차순'}
-        >
-          {sortDirection === 'asc' ? (
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
-            </svg>
-          )}
-        </button>
-      </div>
+      <SortDropdown
+        options={sortOptions}
+        value={sortBy}
+        onChange={onSortByChange}
+        direction={sortDirection}
+        onDirectionToggle={onSortDirectionToggle}
+      />
 
       {/* View Mode Toggle */}
       <div className="flex border border-gray-300 rounded-lg overflow-hidden">

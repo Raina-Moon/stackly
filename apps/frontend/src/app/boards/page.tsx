@@ -11,20 +11,31 @@ import {
   BoardsGridView,
   BoardsListView,
   DeleteBoardModal,
+  EditBoardModal,
   type SortOption,
   type SortDirection,
   type FilterOption,
   type ViewMode,
 } from '@/components/boards';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBoards, useDeleteBoard } from '@/hooks/useBoard';
+import { useBoards, useDeleteBoard, useUpdateBoard, useFavoriteBoard, useGetFavorites, type Board } from '@/hooks/useBoard';
 import { useToast } from '@/contexts/ToastContext';
+
+function getInviteUrl(inviteCode: string): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/invite/${inviteCode}`;
+  }
+  return `/invite/${inviteCode}`;
+}
 
 export default function BoardsPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { data: boards, isLoading: boardsLoading } = useBoards();
+  const { data: favoritesData } = useGetFavorites();
   const deleteBoard = useDeleteBoard();
+  const updateBoard = useUpdateBoard();
+  const favoriteBoard = useFavoriteBoard();
   const { showToast } = useToast();
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -35,6 +46,12 @@ export default function BoardsPage() {
   const [filter, setFilter] = useState<FilterOption>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editBoard, setEditBoard] = useState<Board | null>(null);
+
+  // Create a Set of favorite IDs for quick lookup
+  const favoriteIds = useMemo(() => {
+    return new Set(favoritesData?.favoriteIds || []);
+  }, [favoritesData?.favoriteIds]);
 
   // Filter and sort boards
   const filteredBoards = useMemo(() => {
@@ -56,6 +73,9 @@ export default function BoardsPage() {
       case 'templates':
         result = result.filter((board) => board.isTemplate);
         break;
+      case 'favorites':
+        result = result.filter((board) => favoriteIds.has(board.id));
+        break;
       default:
         result = result.filter((board) => !board.isArchived);
     }
@@ -72,6 +92,14 @@ export default function BoardsPage() {
 
     // Apply sort
     result.sort((a, b) => {
+      // Always sort favorites to top in non-favorites filter
+      if (filter !== 'favorites') {
+        const aFav = favoriteIds.has(a.id);
+        const bFav = favoriteIds.has(b.id);
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+      }
+
       let comparison = 0;
       switch (sortBy) {
         case 'name':
@@ -88,7 +116,7 @@ export default function BoardsPage() {
     });
 
     return result;
-  }, [boards, filter, searchQuery, sortBy, sortDirection, user?.id]);
+  }, [boards, filter, searchQuery, sortBy, sortDirection, user?.id, favoriteIds]);
 
   const handleBoardClick = (boardId: string) => {
     if (!isAuthenticated) {
@@ -114,6 +142,36 @@ export default function BoardsPage() {
       setDeleteConfirmId(null);
     } catch (error: any) {
       showToast(error.message || '보드 삭제에 실패했습니다', 'error');
+    }
+  };
+
+  const handleArchiveBoard = async (boardId: string, archive: boolean) => {
+    try {
+      await updateBoard.mutateAsync({
+        id: boardId,
+        data: { isArchived: archive },
+      });
+      showToast(archive ? '보드가 보관되었습니다' : '보드가 보관 해제되었습니다', 'success');
+    } catch (error: any) {
+      showToast(error.message || '보드 상태 변경에 실패했습니다', 'error');
+    }
+  };
+
+  const handleCopyLink = async (inviteCode: string) => {
+    try {
+      const url = getInviteUrl(inviteCode);
+      await navigator.clipboard.writeText(url);
+      showToast('초대 링크가 복사되었습니다', 'success');
+    } catch (error) {
+      showToast('링크 복사에 실패했습니다', 'error');
+    }
+  };
+
+  const handleFavoriteBoard = async (boardId: string) => {
+    try {
+      await favoriteBoard.mutateAsync(boardId);
+    } catch (error: any) {
+      showToast(error.message || '즐겨찾기 변경에 실패했습니다', 'error');
     }
   };
 
@@ -182,16 +240,28 @@ export default function BoardsPage() {
         <BoardsGridView
           boards={filteredBoards}
           currentUserId={user?.id}
+          showArchived={filter === 'archived'}
           onBoardClick={handleBoardClick}
           onDeleteClick={setDeleteConfirmId}
+          onEditClick={setEditBoard}
+          onArchiveClick={handleArchiveBoard}
+          onCopyLinkClick={handleCopyLink}
+          onFavoriteClick={handleFavoriteBoard}
           onCreateClick={handleCreateBoard}
+          favoriteIds={favoriteIds}
         />
       ) : (
         <BoardsListView
           boards={filteredBoards}
           currentUserId={user?.id}
+          showArchived={filter === 'archived'}
           onBoardClick={handleBoardClick}
           onDeleteClick={setDeleteConfirmId}
+          onEditClick={setEditBoard}
+          onArchiveClick={handleArchiveBoard}
+          onCopyLinkClick={handleCopyLink}
+          onFavoriteClick={handleFavoriteBoard}
+          favoriteIds={favoriteIds}
         />
       )}
 
@@ -201,6 +271,13 @@ export default function BoardsPage() {
         isDeleting={deleteBoard.isPending}
         onClose={() => setDeleteConfirmId(null)}
         onConfirm={handleDeleteBoard}
+      />
+
+      {/* Edit Board Modal */}
+      <EditBoardModal
+        isOpen={!!editBoard}
+        board={editBoard}
+        onClose={() => setEditBoard(null)}
       />
 
       {/* Login Modal */}

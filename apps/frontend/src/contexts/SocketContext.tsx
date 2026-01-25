@@ -18,9 +18,12 @@ import {
   BoardSyncData,
 } from '@/lib/socket';
 
+export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
+
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
+  connectionState: ConnectionState;
   currentBoardId: string | null;
   onlineUsers: UserPresence[];
   voiceUsers: string[];
@@ -51,22 +54,42 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [currentBoardId, setCurrentBoardId] = useState<string | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<UserPresence[]>([]);
   const [voiceUsers, setVoiceUsers] = useState<string[]>([]);
+  const [wasConnected, setWasConnected] = useState(false);
 
   // Connect socket when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
+      setConnectionState('connecting');
       const sock = connectSocket();
       setSocket(sock);
 
       sock.on('connect', () => {
+        const wasReconnect = wasConnected;
         setIsConnected(true);
+        setConnectionState('connected');
+        setWasConnected(true);
+
+        // Re-join current board room on reconnection
+        if (wasReconnect && currentBoardId) {
+          sock.emit('join_board', { boardId: currentBoardId });
+        }
       });
 
       sock.on('disconnect', () => {
         setIsConnected(false);
+        setConnectionState('disconnected');
+      });
+
+      sock.io.on('reconnect_attempt', () => {
+        setConnectionState('reconnecting');
+      });
+
+      sock.io.on('reconnect_failed', () => {
+        setConnectionState('disconnected');
       });
 
       // Board sync events
@@ -134,9 +157,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         disconnectSocket();
         setSocket(null);
         setIsConnected(false);
+        setConnectionState('disconnected');
+        setWasConnected(false);
       };
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, wasConnected, currentBoardId]);
 
   const joinBoard = useCallback(
     (boardId: string) => {
@@ -283,6 +308,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       value={{
         socket,
         isConnected,
+        connectionState,
         currentBoardId,
         onlineUsers,
         voiceUsers,

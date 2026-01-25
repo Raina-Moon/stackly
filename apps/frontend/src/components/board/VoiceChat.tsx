@@ -18,6 +18,7 @@ export function VoiceChat({ boardId }: VoiceChatProps) {
     joinVoice,
     leaveVoice,
     toggleMute,
+    clearError,
   } = useVoiceChat({ boardId });
 
   const { onlineUsers } = useSocket();
@@ -29,23 +30,42 @@ export function VoiceChat({ boardId }: VoiceChatProps) {
 
   if (!isInVoice) {
     return (
-      <button
-        onClick={joinVoice}
-        disabled={isLoading}
-        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors disabled:opacity-50"
-      >
-        {isLoading ? (
-          <>
-            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-            <span>Connecting...</span>
-          </>
-        ) : (
-          <>
-            <MicrophoneIcon className="w-4 h-4" />
-            <span>Join Voice</span>
-          </>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={joinVoice}
+          disabled={isLoading}
+          className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors disabled:opacity-50"
+        >
+          {isLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              <span>Connecting...</span>
+            </>
+          ) : (
+            <>
+              <MicrophoneIcon className="w-4 h-4" />
+              <span>Join Voice</span>
+            </>
+          )}
+        </button>
+        {error && (
+          <div className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded max-w-[200px]">
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="truncate" title={error}>{error}</span>
+            <button
+              onClick={clearError}
+              className="ml-1 hover:text-red-800"
+              title="Dismiss"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         )}
-      </button>
+      </div>
     );
   }
 

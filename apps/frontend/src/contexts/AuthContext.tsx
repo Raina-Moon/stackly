@@ -18,6 +18,7 @@ import {
   refreshTokens,
   isTokenExpiring,
 } from '@/lib/auth';
+import { updateSocketAuth } from '@/lib/socket';
 
 interface AuthContextType {
   user: User | null;
@@ -55,6 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
             return;
           }
+          // Update socket auth with new token after refresh
+          updateSocketAuth();
         }
 
         setUser(auth.user);
@@ -75,6 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const refreshed = await refreshTokens();
         if (!refreshed) {
           setUser(null);
+        } else {
+          // Update socket auth with new token
+          updateSocketAuth();
         }
       }
     }, 14 * 60 * 1000); // 14분

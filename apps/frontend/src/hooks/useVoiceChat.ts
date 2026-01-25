@@ -190,6 +190,11 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
     };
   }, [boardId, isConnected, isInVoice, user?.id, createPeer, removePeer]);
 
+  // Clear error
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   // Join voice chat
   const joinVoice = useCallback(async () => {
     if (!boardId || !isConnected) return;
@@ -216,9 +221,15 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
       if (socket) {
         socket.emit('voice_join', { boardId });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to get microphone access:', err);
-      setError('Microphone access denied. Please allow microphone access to join voice chat.');
+      if (err instanceof Error && err.name === 'NotAllowedError') {
+        setError('Microphone access denied');
+      } else if (err instanceof Error && err.name === 'NotFoundError') {
+        setError('No microphone found');
+      } else {
+        setError('Failed to access microphone');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -286,5 +297,6 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
     joinVoice,
     leaveVoice,
     toggleMute,
+    clearError,
   };
 }

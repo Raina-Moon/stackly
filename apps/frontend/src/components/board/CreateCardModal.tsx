@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCreateCard } from '@/hooks/useCard';
 import { useToast } from '@/contexts/ToastContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useSocket } from '@/contexts/SocketContext';
 
 interface CreateCardModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export default function CreateCardModal({
   existingCardsCount,
 }: CreateCardModalProps) {
   const { showToast } = useToast();
+  const { emitCardCreate } = useSocket();
   const createCard = useCreateCard();
 
   const [title, setTitle] = useState('');
@@ -77,7 +79,7 @@ export default function CreateCardModal({
     }
 
     try {
-      await createCard.mutateAsync({
+      const newCard = await createCard.mutateAsync({
         boardId,
         data: {
           title: title.trim(),
@@ -91,6 +93,10 @@ export default function CreateCardModal({
           columnId,
         },
       });
+
+      // Emit socket event for real-time sync
+      emitCardCreate({ boardId, card: { ...newCard } as Record<string, unknown> });
+
       showToast('카드가 생성되었습니다', 'success');
       handleClose();
     } catch (error: any) {

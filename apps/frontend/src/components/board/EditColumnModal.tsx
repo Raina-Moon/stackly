@@ -5,6 +5,7 @@ import { Column } from '@/hooks/useBoard';
 import { useUpdateColumn } from '@/hooks/useColumn';
 import { useToast } from '@/contexts/ToastContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useSocket } from '@/contexts/SocketContext';
 
 interface EditColumnModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function EditColumnModal({
   boardId,
 }: EditColumnModalProps) {
   const { showToast } = useToast();
+  const { emitColumnUpdate } = useSocket();
   const updateColumn = useUpdateColumn();
 
   const [name, setName] = useState(column.name);
@@ -51,16 +53,22 @@ export default function EditColumnModal({
       return;
     }
 
+    const updates = {
+      name: name.trim(),
+      color,
+      wipLimit: wipLimit ? Number(wipLimit) : undefined,
+    };
+
     try {
       await updateColumn.mutateAsync({
         id: column.id,
         boardId,
-        data: {
-          name: name.trim(),
-          color,
-          wipLimit: wipLimit ? Number(wipLimit) : undefined,
-        },
+        data: updates,
       });
+
+      // Emit socket event for real-time sync
+      emitColumnUpdate({ boardId, columnId: column.id, updates });
+
       showToast('컬럼이 수정되었습니다', 'success');
       onClose();
     } catch (error: any) {

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCreateColumn } from '@/hooks/useColumn';
 import { useToast } from '@/contexts/ToastContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useSocket } from '@/contexts/SocketContext';
 
 interface CreateColumnModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export default function CreateColumnModal({
   existingColumnsCount,
 }: CreateColumnModalProps) {
   const { showToast } = useToast();
+  const { emitColumnCreate } = useSocket();
   const createColumn = useCreateColumn();
 
   const [name, setName] = useState('');
@@ -53,13 +55,17 @@ export default function CreateColumnModal({
     }
 
     try {
-      await createColumn.mutateAsync({
+      const newColumn = await createColumn.mutateAsync({
         name: name.trim(),
         color,
         position: existingColumnsCount,
         wipLimit: wipLimit ? Number(wipLimit) : undefined,
         boardId,
       });
+
+      // Emit socket event for real-time sync
+      emitColumnCreate({ boardId, column: { ...newColumn } as Record<string, unknown> });
+
       showToast('컬럼이 생성되었습니다', 'success');
       handleClose();
     } catch (error: any) {

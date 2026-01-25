@@ -39,6 +39,7 @@ import BoardSettingsModal from './BoardSettingsModal';
 import { OnlineUsers } from './OnlineUsers';
 import { VoiceChat } from './VoiceChat';
 import { RemoteCursors } from './RemoteCursor';
+import { ConnectionStatus } from './ConnectionStatus';
 
 interface BoardViewProps {
   board: Board;
@@ -417,6 +418,10 @@ export default function BoardView({ board }: BoardViewProps) {
         id: selectedColumn.id,
         boardId: board.id,
       });
+
+      // Emit socket event for real-time sync
+      emitColumnDelete({ boardId: board.id, columnId: selectedColumn.id });
+
       showToast('컬럼이 삭제되었습니다', 'success');
       setIsDeleteColumnModalOpen(false);
       setSelectedColumn(null);
@@ -427,6 +432,9 @@ export default function BoardView({ board }: BoardViewProps) {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Connection status banner */}
+      <ConnectionStatus />
+
       {/* Board header */}
       <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
         <div className="flex items-center gap-3">

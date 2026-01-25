@@ -5,6 +5,7 @@ import { Card } from '@/hooks/useBoard';
 import { useUpdateCard, useDeleteCard } from '@/hooks/useCard';
 import { useToast } from '@/contexts/ToastContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useSocket } from '@/contexts/SocketContext';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface CardDetailModalProps {
@@ -38,6 +39,7 @@ export default function CardDetailModal({
   boardId,
 }: CardDetailModalProps) {
   const { showToast } = useToast();
+  const { emitCardUpdate, emitCardDelete } = useSocket();
   const updateCard = useUpdateCard();
   const deleteCard = useDeleteCard();
 
@@ -81,20 +83,26 @@ export default function CardDetailModal({
       return;
     }
 
+    const updates = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      priority,
+      color,
+      tags: tags.length > 0 ? tags : [],
+      dueDate: dueDate || undefined,
+      estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
+    };
+
     try {
       await updateCard.mutateAsync({
         id: card.id,
         boardId,
-        data: {
-          title: title.trim(),
-          description: description.trim() || undefined,
-          priority,
-          color,
-          tags: tags.length > 0 ? tags : [],
-          dueDate: dueDate || undefined,
-          estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
-        },
+        data: updates,
       });
+
+      // Emit socket event for real-time sync
+      emitCardUpdate({ boardId, cardId: card.id, updates });
+
       showToast('카드가 수정되었습니다', 'success');
       setIsEditing(false);
     } catch (error: any) {
@@ -103,14 +111,20 @@ export default function CardDetailModal({
   };
 
   const handleToggleComplete = async () => {
+    const updates = {
+      completedAt: card.completedAt ? undefined : new Date().toISOString(),
+    };
+
     try {
       await updateCard.mutateAsync({
         id: card.id,
         boardId,
-        data: {
-          completedAt: card.completedAt ? undefined : new Date().toISOString(),
-        },
+        data: updates,
       });
+
+      // Emit socket event for real-time sync
+      emitCardUpdate({ boardId, cardId: card.id, updates });
+
       showToast(
         card.completedAt ? '카드가 미완료 상태로 변경되었습니다' : '카드가 완료되었습니다',
         'success'
@@ -123,6 +137,10 @@ export default function CardDetailModal({
   const handleDelete = async () => {
     try {
       await deleteCard.mutateAsync({ id: card.id, boardId });
+
+      // Emit socket event for real-time sync
+      emitCardDelete({ boardId, cardId: card.id, columnId: card.columnId });
+
       showToast('카드가 삭제되었습니다', 'success');
       setIsDeleteModalOpen(false);
       onClose();

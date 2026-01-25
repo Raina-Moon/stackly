@@ -21,7 +21,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Board, Card as CardType, Column as ColumnType } from '@/hooks/useBoard';
 import { useReorderColumns, useDeleteColumn } from '@/hooks/useColumn';
 import { useToast } from '@/contexts/ToastContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useMoveCard, useReorderCards } from '@/hooks/useCard';
+import { useRealtimeBoard } from '@/hooks/useRealtimeBoard';
+import { usePresence } from '@/hooks/usePresence';
 import { parseDndId, createDndId, arrayMove } from '@/utils/dnd';
 import Column from './Column';
 import SortableColumn from './SortableColumn';
@@ -33,6 +36,9 @@ import CreateCardModal from './CreateCardModal';
 import CardDetailModal from './CardDetailModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import BoardSettingsModal from './BoardSettingsModal';
+import { OnlineUsers } from './OnlineUsers';
+import { VoiceChat } from './VoiceChat';
+import { RemoteCursors } from './RemoteCursor';
 
 interface BoardViewProps {
   board: Board;
@@ -40,6 +46,22 @@ interface BoardViewProps {
 
 export default function BoardView({ board }: BoardViewProps) {
   const { showToast } = useToast();
+  const {
+    emitCardMove,
+    emitCardUpdate,
+    emitCardCreate,
+    emitCardDelete,
+    emitColumnCreate,
+    emitColumnUpdate,
+    emitColumnDelete,
+    emitColumnReorder,
+    emitDragStart,
+    emitDragEnd,
+  } = useSocket();
+
+  // Real-time sync
+  useRealtimeBoard(board.id);
+  const { notifyDragStart, notifyDragEnd } = usePresence({ boardId: board.id });
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -100,13 +122,19 @@ export default function BoardView({ board }: BoardViewProps) {
 
       if (type === 'card') {
         const card = findCard(id);
-        if (card) setActiveCard(card);
+        if (card) {
+          setActiveCard(card);
+          notifyDragStart('card', id);
+        }
       } else if (type === 'column') {
         const column = findColumn(id);
-        if (column) setActiveColumn(column);
+        if (column) {
+          setActiveColumn(column);
+          notifyDragStart('column', id);
+        }
       }
     },
-    [findCard, findColumn]
+    [findCard, findColumn, notifyDragStart]
   );
 
   // Handle drag over (for real-time feedback when moving cards between columns)
@@ -169,6 +197,7 @@ export default function BoardView({ board }: BoardViewProps) {
 
       setActiveCard(null);
       setActiveColumn(null);
+      notifyDragEnd();
 
       if (!over) return;
 
@@ -198,6 +227,12 @@ export default function BoardView({ board }: BoardViewProps) {
 
             // API call
             reorderColumns.mutate({
+              boardId: board.id,
+              columnIds: newColumns.map((c) => c.id),
+            });
+
+            // Emit socket event
+            emitColumnReorder({
               boardId: board.id,
               columnIds: newColumns.map((c) => c.id),
             });
@@ -322,6 +357,15 @@ export default function BoardView({ board }: BoardViewProps) {
               position: targetPosition,
             },
           });
+
+          // Emit socket event
+          emitCardMove({
+            boardId: board.id,
+            cardId: activeId,
+            sourceColumnId: activeCard.columnId,
+            targetColumnId,
+            position: targetPosition,
+          });
         }
       }
     },
@@ -335,6 +379,9 @@ export default function BoardView({ board }: BoardViewProps) {
       reorderColumns,
       reorderCards,
       moveCard,
+      notifyDragEnd,
+      emitCardMove,
+      emitColumnReorder,
     ]
   );
 
@@ -396,13 +443,14 @@ export default function BoardView({ board }: BoardViewProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Members count */}
-          <div className="flex items-center gap-1 text-sm text-gray-500 mr-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <span>{board.members?.length || 1}명</span>
-          </div>
+          {/* Online users */}
+          <OnlineUsers boardId={board.id} />
+
+          {/* Voice chat */}
+          <VoiceChat boardId={board.id} />
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-gray-200 mx-2" />
 
           {/* Invite button */}
           <button
@@ -580,6 +628,9 @@ export default function BoardView({ board }: BoardViewProps) {
         onClose={() => setIsSettingsModalOpen(false)}
         board={board}
       />
+
+      {/* Remote cursors overlay */}
+      <RemoteCursors boardId={board.id} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { RefreshToken } from './entities/refresh-token.entity';
 import { AuthModule } from './modules/auth/auth.module';
 import { KanbanModule } from './modules/kanban/kanban.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
     AuthModule,
     KanbanModule,
     SchedulesModule,
+    RealtimeModule,
   ],
   controllers: [],
   providers: [],

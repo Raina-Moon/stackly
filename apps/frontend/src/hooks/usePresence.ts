@@ -9,33 +9,43 @@ interface UsePresenceOptions {
   throttleMs?: number;
 }
 
-export function usePresence({ boardId, trackCursor = true, throttleMs = 50 }: UsePresenceOptions) {
+export function usePresence({ boardId, trackCursor = true, throttleMs = 16 }: UsePresenceOptions) {
   const { onlineUsers, voiceUsers, emitCursorMove, emitDragStart, emitDragEnd, isConnected } = useSocket();
   const { user } = useAuth();
   const lastEmitRef = useRef<number>(0);
+  const lastPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Filter out current user from online users
   const otherUsers = onlineUsers.filter((u) => u.id !== user?.id);
 
-  // Track cursor movement
+  // Track cursor movement with position delta check
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (!boardId || !isConnected || !trackCursor) return;
 
       const now = Date.now();
       if (now - lastEmitRef.current < throttleMs) return;
+
+      // Only emit if cursor moved significantly (at least 2px)
+      const dx = event.clientX - lastPositionRef.current.x;
+      const dy = event.clientY - lastPositionRef.current.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < 2) return;
+
       lastEmitRef.current = now;
+      lastPositionRef.current = { x: event.clientX, y: event.clientY };
 
       emitCursorMove(boardId, event.clientX, event.clientY);
     },
     [boardId, isConnected, trackCursor, throttleMs, emitCursorMove]
   );
 
-  // Set up cursor tracking
+  // Set up cursor tracking with passive listener for better performance
   useEffect(() => {
     if (!trackCursor) return;
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };

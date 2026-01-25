@@ -26,6 +26,9 @@ import Column from './Column';
 import SortableColumn from './SortableColumn';
 import DragOverlay from './DragOverlay';
 import InviteModal from './InviteModal';
+import CreateColumnModal from './CreateColumnModal';
+import CreateCardModal from './CreateCardModal';
+import CardDetailModal from './CardDetailModal';
 
 interface BoardViewProps {
   board: Board;
@@ -33,6 +36,11 @@ interface BoardViewProps {
 
 export default function BoardView({ board }: BoardViewProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isCreateColumnModalOpen, setIsCreateColumnModalOpen] = useState(false);
+  const [isCreateCardModalOpen, setIsCreateCardModalOpen] = useState(false);
+  const [selectedColumnIdForCard, setSelectedColumnIdForCard] = useState<string | null>(null);
+  const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [activeCard, setActiveCard] = useState<CardType | null>(null);
   const [activeColumn, setActiveColumn] = useState<ColumnType | null>(null);
 
@@ -320,13 +328,17 @@ export default function BoardView({ board }: BoardViewProps) {
   );
 
   const handleCardClick = (card: CardType) => {
-    // TODO: Open card detail modal
-    console.log('Card clicked:', card);
+    setSelectedCard(card);
+    setIsCardDetailModalOpen(true);
   };
 
   const handleAddCard = (columnId: string) => {
-    // TODO: Open create card modal
-    console.log('Add card to column:', columnId);
+    setSelectedColumnIdForCard(columnId);
+    setIsCreateCardModalOpen(true);
+  };
+
+  const handleAddColumn = () => {
+    setIsCreateColumnModalOpen(true);
   };
 
   return (
@@ -408,7 +420,10 @@ export default function BoardView({ board }: BoardViewProps) {
                 </SortableContext>
 
                 {/* Add column button */}
-                <button className="flex items-center justify-center w-72 min-w-[288px] h-12 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors text-gray-600 font-medium">
+                <button
+                  onClick={handleAddColumn}
+                  className="flex items-center justify-center w-72 min-w-[288px] h-12 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors text-gray-600 font-medium"
+                >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -422,7 +437,10 @@ export default function BoardView({ board }: BoardViewProps) {
                 </svg>
                 <p className="text-lg font-medium mb-2">아직 컬럼이 없습니다</p>
                 <p className="text-sm mb-4">컬럼을 추가하여 카드를 정리하세요</p>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                <button
+                  onClick={handleAddColumn}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -449,6 +467,43 @@ export default function BoardView({ board }: BoardViewProps) {
         boardName={board.name}
         inviteCode={board.inviteCode}
       />
+
+      {/* Create Column Modal */}
+      <CreateColumnModal
+        isOpen={isCreateColumnModalOpen}
+        onClose={() => setIsCreateColumnModalOpen(false)}
+        boardId={board.id}
+        existingColumnsCount={sortedColumns.length}
+      />
+
+      {/* Create Card Modal */}
+      {selectedColumnIdForCard && (
+        <CreateCardModal
+          isOpen={isCreateCardModalOpen}
+          onClose={() => {
+            setIsCreateCardModalOpen(false);
+            setSelectedColumnIdForCard(null);
+          }}
+          boardId={board.id}
+          columnId={selectedColumnIdForCard}
+          existingCardsCount={
+            cards.filter((c) => c.columnId === selectedColumnIdForCard).length
+          }
+        />
+      )}
+
+      {/* Card Detail Modal */}
+      {selectedCard && (
+        <CardDetailModal
+          isOpen={isCardDetailModalOpen}
+          onClose={() => {
+            setIsCardDetailModalOpen(false);
+            setSelectedCard(null);
+          }}
+          card={selectedCard}
+          boardId={board.id}
+        />
+      )}
     </div>
   );
 }

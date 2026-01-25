@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useToast } from '@/contexts/ToastContext';
 import { useRegenerateInviteCode } from '@/hooks/useBoard';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface InviteModalProps {
   isOpen: boolean;
@@ -49,6 +50,8 @@ export default function InviteModal({
       showToast(error.message || '초대 코드 재생성에 실패했습니다', 'error');
     }
   };
+
+  useEscapeKey(onClose, isOpen && !regenerateCode.isPending);
 
   if (!isOpen) return null;
 

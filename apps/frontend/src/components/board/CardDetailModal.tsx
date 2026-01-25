@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card } from '@/hooks/useBoard';
 import { useUpdateCard, useDeleteCard } from '@/hooks/useCard';
 import { useToast } from '@/contexts/ToastContext';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface CardDetailModalProps {
@@ -146,6 +147,8 @@ export default function CardDetailModal({
     handleCancel();
     onClose();
   };
+
+  useEscapeKey(handleClose, isOpen && !updateCard.isPending && !deleteCard.isPending);
 
   const priorityInfo = priorityOptions.find((p) => p.value === card.priority);
 

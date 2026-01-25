@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCreateCard } from '@/hooks/useCard';
 import { useToast } from '@/contexts/ToastContext';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface CreateCardModalProps {
   isOpen: boolean;
@@ -108,6 +109,8 @@ export default function CreateCardModal({
     setEstimatedHours('');
     onClose();
   };
+
+  useEscapeKey(handleClose, isOpen && !createCard.isPending);
 
   if (!isOpen) return null;
 

@@ -19,7 +19,8 @@ import {
 } from '@dnd-kit/sortable';
 import { useQueryClient } from '@tanstack/react-query';
 import { Board, Card as CardType, Column as ColumnType } from '@/hooks/useBoard';
-import { useReorderColumns } from '@/hooks/useColumn';
+import { useReorderColumns, useDeleteColumn } from '@/hooks/useColumn';
+import { useToast } from '@/contexts/ToastContext';
 import { useMoveCard, useReorderCards } from '@/hooks/useCard';
 import { parseDndId, createDndId, arrayMove } from '@/utils/dnd';
 import Column from './Column';
@@ -27,16 +28,25 @@ import SortableColumn from './SortableColumn';
 import DragOverlay from './DragOverlay';
 import InviteModal from './InviteModal';
 import CreateColumnModal from './CreateColumnModal';
+import EditColumnModal from './EditColumnModal';
 import CreateCardModal from './CreateCardModal';
 import CardDetailModal from './CardDetailModal';
+import DeleteConfirmModal from './DeleteConfirmModal';
+import BoardSettingsModal from './BoardSettingsModal';
 
 interface BoardViewProps {
   board: Board;
 }
 
 export default function BoardView({ board }: BoardViewProps) {
+  const { showToast } = useToast();
+
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isCreateColumnModalOpen, setIsCreateColumnModalOpen] = useState(false);
+  const [isEditColumnModalOpen, setIsEditColumnModalOpen] = useState(false);
+  const [isDeleteColumnModalOpen, setIsDeleteColumnModalOpen] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<ColumnType | null>(null);
   const [isCreateCardModalOpen, setIsCreateCardModalOpen] = useState(false);
   const [selectedColumnIdForCard, setSelectedColumnIdForCard] = useState<string | null>(null);
   const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
@@ -46,6 +56,7 @@ export default function BoardView({ board }: BoardViewProps) {
 
   const queryClient = useQueryClient();
   const reorderColumns = useReorderColumns();
+  const deleteColumn = useDeleteColumn();
   const moveCard = useMoveCard();
   const reorderCards = useReorderCards();
 
@@ -341,6 +352,32 @@ export default function BoardView({ board }: BoardViewProps) {
     setIsCreateColumnModalOpen(true);
   };
 
+  const handleEditColumn = (column: ColumnType) => {
+    setSelectedColumn(column);
+    setIsEditColumnModalOpen(true);
+  };
+
+  const handleDeleteColumnClick = (column: ColumnType) => {
+    setSelectedColumn(column);
+    setIsDeleteColumnModalOpen(true);
+  };
+
+  const handleDeleteColumn = async () => {
+    if (!selectedColumn) return;
+
+    try {
+      await deleteColumn.mutateAsync({
+        id: selectedColumn.id,
+        boardId: board.id,
+      });
+      showToast('컬럼이 삭제되었습니다', 'success');
+      setIsDeleteColumnModalOpen(false);
+      setSelectedColumn(null);
+    } catch (error: any) {
+      showToast(error.message || '컬럼 삭제에 실패했습니다', 'error');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Board header */}
@@ -379,7 +416,11 @@ export default function BoardView({ board }: BoardViewProps) {
           </button>
 
           {/* Settings button */}
-          <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+          <button
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            title="보드 설정"
+          >
             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -412,6 +453,8 @@ export default function BoardView({ board }: BoardViewProps) {
                           cards={cards}
                           onCardClick={handleCardClick}
                           onAddCard={() => handleAddCard(column.id)}
+                          onEditColumn={() => handleEditColumn(column)}
+                          onDeleteColumn={() => handleDeleteColumnClick(column)}
                           dragHandleProps={dragHandleProps}
                         />
                       )}
@@ -476,6 +519,32 @@ export default function BoardView({ board }: BoardViewProps) {
         existingColumnsCount={sortedColumns.length}
       />
 
+      {/* Edit Column Modal */}
+      {selectedColumn && (
+        <EditColumnModal
+          isOpen={isEditColumnModalOpen}
+          onClose={() => {
+            setIsEditColumnModalOpen(false);
+            setSelectedColumn(null);
+          }}
+          column={selectedColumn}
+          boardId={board.id}
+        />
+      )}
+
+      {/* Delete Column Confirm Modal */}
+      <DeleteConfirmModal
+        isOpen={isDeleteColumnModalOpen}
+        onClose={() => {
+          setIsDeleteColumnModalOpen(false);
+          setSelectedColumn(null);
+        }}
+        onConfirm={handleDeleteColumn}
+        title="컬럼 삭제"
+        message={`"${selectedColumn?.name}" 컬럼을 삭제하시겠습니까? 컬럼에 포함된 모든 카드도 함께 삭제됩니다.`}
+        isLoading={deleteColumn.isPending}
+      />
+
       {/* Create Card Modal */}
       {selectedColumnIdForCard && (
         <CreateCardModal
@@ -504,6 +573,13 @@ export default function BoardView({ board }: BoardViewProps) {
           boardId={board.id}
         />
       )}
+
+      {/* Board Settings Modal */}
+      <BoardSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        board={board}
+      />
     </div>
   );
 }

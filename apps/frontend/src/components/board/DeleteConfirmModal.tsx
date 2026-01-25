@@ -1,5 +1,7 @@
 'use client';
 
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+
 interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,6 +19,8 @@ export default function DeleteConfirmModal({
   message,
   isLoading = false,
 }: DeleteConfirmModalProps) {
+  useEscapeKey(onClose, isOpen && !isLoading);
+
   if (!isOpen) return null;
 
   return (

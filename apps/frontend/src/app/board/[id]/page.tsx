@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBoard } from '@/hooks/useBoard';
 import BoardView from '@/components/board/BoardView';
+import BoardSkeleton from '@/components/board/BoardSkeleton';
 
 export default function BoardPage() {
   const params = useParams();
@@ -21,10 +22,19 @@ export default function BoardPage() {
 
   if (authLoading || boardLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-          <p className="text-gray-500">보드를 불러오는 중...</p>
+      <div className="min-h-screen bg-gray-100 flex flex-col">
+        {/* Top navigation skeleton */}
+        <nav className="bg-white border-b px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-gray-200 rounded animate-pulse" />
+            <div className="w-12 h-5 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="w-32 h-5 bg-gray-200 rounded animate-pulse" />
+        </nav>
+
+        {/* Board skeleton */}
+        <div className="flex-1 overflow-hidden">
+          <BoardSkeleton />
         </div>
       </div>
     );

@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useCreateColumn } from '@/hooks/useColumn';
+import { useState, useEffect } from 'react';
+import { Column } from '@/hooks/useBoard';
+import { useUpdateColumn } from '@/hooks/useColumn';
 import { useToast } from '@/contexts/ToastContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 
-interface CreateColumnModalProps {
+interface EditColumnModalProps {
   isOpen: boolean;
   onClose: () => void;
+  column: Column;
   boardId: string;
-  existingColumnsCount: number;
 }
 
 const colorOptions = [
@@ -22,27 +23,25 @@ const colorOptions = [
   { value: '#6B7280', name: '회색' },
 ];
 
-export default function CreateColumnModal({
+export default function EditColumnModal({
   isOpen,
   onClose,
+  column,
   boardId,
-  existingColumnsCount,
-}: CreateColumnModalProps) {
+}: EditColumnModalProps) {
   const { showToast } = useToast();
-  const createColumn = useCreateColumn();
+  const updateColumn = useUpdateColumn();
 
-  const [name, setName] = useState('');
-  const [color, setColor] = useState<string>('#3B82F6');
-  const [wipLimit, setWipLimit] = useState<string>('');
+  const [name, setName] = useState(column.name);
+  const [color, setColor] = useState<string>(column.color || '#3B82F6');
+  const [wipLimit, setWipLimit] = useState<string>(column.wipLimit?.toString() || '');
 
-  const handleClose = () => {
-    setName('');
-    setColor('#3B82F6');
-    setWipLimit('');
-    onClose();
-  };
-
-  useEscapeKey(handleClose, isOpen && !createColumn.isPending);
+  // Reset form when column changes
+  useEffect(() => {
+    setName(column.name);
+    setColor(column.color || '#3B82F6');
+    setWipLimit(column.wipLimit?.toString() || '');
+  }, [column]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,19 +52,30 @@ export default function CreateColumnModal({
     }
 
     try {
-      await createColumn.mutateAsync({
-        name: name.trim(),
-        color,
-        position: existingColumnsCount,
-        wipLimit: wipLimit ? Number(wipLimit) : undefined,
+      await updateColumn.mutateAsync({
+        id: column.id,
         boardId,
+        data: {
+          name: name.trim(),
+          color,
+          wipLimit: wipLimit ? Number(wipLimit) : undefined,
+        },
       });
-      showToast('컬럼이 생성되었습니다', 'success');
-      handleClose();
+      showToast('컬럼이 수정되었습니다', 'success');
+      onClose();
     } catch (error: any) {
-      showToast(error.message || '컬럼 생성에 실패했습니다', 'error');
+      showToast(error.message || '컬럼 수정에 실패했습니다', 'error');
     }
   };
+
+  const handleClose = () => {
+    setName(column.name);
+    setColor(column.color || '#3B82F6');
+    setWipLimit(column.wipLimit?.toString() || '');
+    onClose();
+  };
+
+  useEscapeKey(handleClose, isOpen && !updateColumn.isPending);
 
   if (!isOpen) return null;
 
@@ -81,7 +91,7 @@ export default function CreateColumnModal({
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">컬럼 추가</h2>
+          <h2 className="text-lg font-semibold text-gray-900">컬럼 수정</h2>
           <button
             onClick={handleClose}
             className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
@@ -159,17 +169,17 @@ export default function CreateColumnModal({
             <button
               type="button"
               onClick={handleClose}
-              disabled={createColumn.isPending}
+              disabled={updateColumn.isPending}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               취소
             </button>
             <button
               type="submit"
-              disabled={createColumn.isPending}
+              disabled={updateColumn.isPending}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {createColumn.isPending ? '생성 중...' : '생성'}
+              {updateColumn.isPending ? '저장 중...' : '저장'}
             </button>
           </div>
         </form>

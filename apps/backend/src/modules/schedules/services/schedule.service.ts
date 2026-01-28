@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, IsNull } from 'typeorm';
 import { Schedule } from '../../../entities/schedule.entity';
 import { CreateScheduleDto } from '../dto/create-schedule.dto';
 import { UpdateScheduleDto } from '../dto/update-schedule.dto';
@@ -19,7 +19,7 @@ export class ScheduleService {
 
   async findAll(userId: string, skip = 0, take = 10): Promise<{ data: Schedule[]; total: number }> {
     const [data, total] = await this.scheduleRepository.findAndCount({
-      where: { userId, deletedAt: null },
+      where: { userId, deletedAt: IsNull() },
       relations: ['user', 'card'],
       skip,
       take,
@@ -31,7 +31,7 @@ export class ScheduleService {
 
   async findById(id: string): Promise<Schedule> {
     const schedule = await this.scheduleRepository.findOne({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: IsNull() },
       relations: ['user', 'card'],
     });
 
@@ -62,7 +62,7 @@ export class ScheduleService {
     return this.scheduleRepository.find({
       where: {
         userId,
-        deletedAt: null,
+        deletedAt: IsNull(),
         startTime: Between(startDate, endDate),
       },
       relations: ['user', 'card'],
@@ -72,7 +72,7 @@ export class ScheduleService {
 
   async findByCard(cardId: string): Promise<Schedule[]> {
     return this.scheduleRepository.find({
-      where: { cardId, deletedAt: null },
+      where: { cardId, deletedAt: IsNull() },
       relations: ['user', 'card'],
       order: { startTime: 'ASC' },
     });

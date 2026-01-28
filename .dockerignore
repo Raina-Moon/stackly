@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+dist/
+out/
+build/
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+*.pem
+*.log
+
+# Local env files
+.env
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Turbo
+.turbo/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore

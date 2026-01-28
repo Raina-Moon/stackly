@@ -107,7 +107,7 @@ export class AuthService {
       { isRevoked: true },
     );
 
-    return result.affected > 0;
+    return (result.affected ?? 0) > 0;
   }
 
   async revokeAllUserTokens(userId: string): Promise<void> {

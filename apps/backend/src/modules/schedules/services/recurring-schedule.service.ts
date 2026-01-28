@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { RecurringSchedule } from '../../../entities/recurring-schedule.entity';
 import { CreateRecurringScheduleDto } from '../dto/create-recurring-schedule.dto';
 import { UpdateRecurringScheduleDto } from '../dto/update-recurring-schedule.dto';
@@ -19,7 +19,7 @@ export class RecurringScheduleService {
 
   async findAll(userId: string, skip = 0, take = 10): Promise<{ data: RecurringSchedule[]; total: number }> {
     const [data, total] = await this.recurringScheduleRepository.findAndCount({
-      where: { userId, deletedAt: null },
+      where: { userId, deletedAt: IsNull() },
       relations: ['user'],
       skip,
       take,
@@ -31,7 +31,7 @@ export class RecurringScheduleService {
 
   async findById(id: string): Promise<RecurringSchedule> {
     const recurring = await this.recurringScheduleRepository.findOne({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: IsNull() },
       relations: ['user'],
     });
 
@@ -59,7 +59,7 @@ export class RecurringScheduleService {
 
   async findByUser(userId: string): Promise<RecurringSchedule[]> {
     return this.recurringScheduleRepository.find({
-      where: { userId, deletedAt: null },
+      where: { userId, deletedAt: IsNull() },
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });

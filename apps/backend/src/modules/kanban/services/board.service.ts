@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Board } from '../../../entities/board.entity';
 import { BoardMember, BoardRole } from '../../../entities/board-member.entity';
@@ -60,7 +60,7 @@ export class BoardService {
 
   async findById(id: string): Promise<Board> {
     const board = await this.boardRepository.findOne({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: IsNull() },
       relations: ['columns', 'cards', 'members', 'owner'],
     });
 
@@ -85,7 +85,7 @@ export class BoardService {
 
   async findByOwner(ownerId: string): Promise<Board[]> {
     return this.boardRepository.find({
-      where: { ownerId, deletedAt: null },
+      where: { ownerId, deletedAt: IsNull() },
       relations: ['columns', 'owner'],
       order: { createdAt: 'DESC' },
     });
@@ -93,7 +93,7 @@ export class BoardService {
 
   async findByInviteCode(inviteCode: string): Promise<Board> {
     const board = await this.boardRepository.findOne({
-      where: { inviteCode, deletedAt: null },
+      where: { inviteCode, deletedAt: IsNull() },
       relations: ['owner'],
     });
 

@@ -61,7 +61,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       this.realtimeService.registerConnection(client.id, user.id);
       console.log(`Client connected: ${client.id} (${user.nickname})`);
     } catch (error) {
-      console.log(`Client authentication failed: ${client.id}`, error.message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.log(`Client authentication failed: ${client.id}`, message);
       client.emit('error', { message: 'Authentication failed' });
       client.disconnect();
     }

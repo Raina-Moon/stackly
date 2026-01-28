@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Card } from '../../../entities/card.entity';
 import { CreateCardDto } from '../dto/create-card.dto';
 import { UpdateCardDto } from '../dto/update-card.dto';
@@ -27,7 +27,7 @@ export class CardService {
 
   async findById(id: string): Promise<Card> {
     const card = await this.cardRepository.findOne({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: IsNull() },
       relations: ['assignee', 'column', 'board', 'schedules'],
     });
 
@@ -52,7 +52,7 @@ export class CardService {
 
   async findByBoard(boardId: string): Promise<Card[]> {
     return this.cardRepository.find({
-      where: { boardId, deletedAt: null },
+      where: { boardId, deletedAt: IsNull() },
       relations: ['assignee', 'column'],
       order: { position: 'ASC' },
     });
@@ -60,7 +60,7 @@ export class CardService {
 
   async findByAssignee(assigneeId: string): Promise<Card[]> {
     return this.cardRepository.find({
-      where: { assigneeId, deletedAt: null },
+      where: { assigneeId, deletedAt: IsNull() },
       relations: ['column', 'board'],
       order: { position: 'ASC' },
     });

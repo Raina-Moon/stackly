@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -42,7 +42,7 @@ export class UserService {
 
   async findByNickname(nickname: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { nickname, deletedAt: null },
+      where: { nickname, deletedAt: IsNull() },
     });
   }
 
@@ -54,7 +54,7 @@ export class UserService {
     const [data, total] = await this.userRepository.findAndCount({
       skip,
       take,
-      where: { deletedAt: null }, // Exclude soft deleted users
+      where: { deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
     });
 
@@ -63,7 +63,7 @@ export class UserService {
 
   async findById(id: string): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: IsNull() },
       relations: ['ownedBoards', 'boardMemberships', 'assignedCards', 'schedules'],
     });
 
@@ -74,9 +74,9 @@ export class UserService {
     return user;
   }
 
-  async findByEmail(email: string): Promise<User> {
+  async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { email, deletedAt: null },
+      where: { email, deletedAt: IsNull() },
     });
   }
 

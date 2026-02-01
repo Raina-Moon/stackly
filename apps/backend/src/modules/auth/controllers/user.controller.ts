@@ -7,14 +7,24 @@ import {
   Body,
   Param,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { GetUser, AuthUser } from '../decorators/get-user.decorator';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  async search(@Query('q') query: string, @GetUser() user: AuthUser) {
+    const users = await this.userService.search(query, user.id);
+    return users.map(({ password, ...rest }) => rest);
+  }
 
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {

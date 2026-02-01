@@ -9,10 +9,12 @@ import { Schedule } from './entities/schedule.entity';
 import { RecurringSchedule } from './entities/recurring-schedule.entity';
 import { BoardMember } from './entities/board-member.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { Friend } from './entities/friend.entity';
 import { AuthModule } from './modules/auth/auth.module';
 import { KanbanModule } from './modules/kanban/kanban.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { FriendsModule } from './modules/friends/friends.module';
 
 @Module({
   imports: [
@@ -32,7 +34,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
           database: configService.get('DB_NAME'),
           autoLoadEntities: true,
           synchronize: configService.get('NODE_ENV') !== 'production',
-          entities: [User, Board, Column, Card, Schedule, RecurringSchedule, BoardMember, RefreshToken],
+          entities: [User, Board, Column, Card, Schedule, RecurringSchedule, BoardMember, RefreshToken, Friend],
           logging: configService.get('NODE_ENV') === 'development',
       }),
     }),
@@ -40,6 +42,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     KanbanModule,
     SchedulesModule,
     RealtimeModule,
+    FriendsModule,
   ],
   controllers: [],
   providers: [],

@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package stackly;
+
+// ======== Cursor & Presence ========
+message CursorMove {
+  string board_id = 1;
+  float x = 2;
+  float y = 3;
+  int64 timestamp = 4;
+}
+
+message CursorUpdate {
+  string user_id = 1;
+  string board_id = 2;
+  float x = 3;
+  float y = 4;
+}
+
+// ======== Drag Events ========
+message DragStart {
+  string board_id = 1;
+  string item_type = 2;  // "card" | "column"
+  string item_id = 3;
+}
+
+message DragEnd {
+  string board_id = 1;
+}
+
+message DragStarted {
+  string user_id = 1;
+  string board_id = 2;
+  string item_type = 3;
+  string item_id = 4;
+}
+
+message DragEnded {
+  string user_id = 1;
+  string board_id = 2;
+}
+
+// ======== Card Events ========
+message CardMove {
+  string board_id = 1;
+  string card_id = 2;
+  string source_column_id = 3;
+  string target_column_id = 4;
+  int32 position = 5;
+}
+
+message CardMoved {
+  string board_id = 1;
+  string card_id = 2;
+  string source_column_id = 3;
+  string target_column_id = 4;
+  int32 position = 5;
+  string user_id = 6;
+}
+
+message CardUpdate {
+  string board_id = 1;
+  string card_id = 2;
+  string title = 3;
+  string description = 4;
+  string color = 5;
+}
+
+message CardUpdated {
+  string board_id = 1;
+  string card_id = 2;
+  string title = 3;
+  string description = 4;
+  string color = 5;
+  string user_id = 6;
+}
+
+// ======== Column Events ========
+message ColumnReorder {
+  string board_id = 1;
+  repeated string column_ids = 2;
+}
+
+message ColumnsReordered {
+  string board_id = 1;
+  repeated string column_ids = 2;
+  string user_id = 3;
+}
+
+// ======== Audio Level ========
+message AudioLevel {
+  string board_id = 1;
+  float level = 2;  // 0.0 - 1.0
+}
+
+message AudioLevelUpdate {
+  string user_id = 1;
+  float level = 2;
+}
+
+// ======== Wrapper for all messages ========
+message RealtimeMessage {
+  oneof payload {
+    // Cursor
+    CursorMove cursor_move = 1;
+    CursorUpdate cursor_update = 2;
+
+    // Drag
+    DragStart drag_start = 3;
+    DragEnd drag_end = 4;
+    DragStarted drag_started = 5;
+    DragEnded drag_ended = 6;
+
+    // Card
+    CardMove card_move = 7;
+    CardMoved card_moved = 8;
+    CardUpdate card_update = 9;
+    CardUpdated card_updated = 10;
+
+    // Column
+    ColumnReorder column_reorder = 11;
+    ColumnsReordered columns_reordered = 12;
+
+    // Audio
+    AudioLevel audio_level = 13;
+    AudioLevelUpdate audio_level_update = 14;
+  }
+}

@@ -32,6 +32,8 @@
     "@nestjs/platform-socket.io": "^10.4.22",
     "@nestjs/typeorm": "^10.0.0",
     "@nestjs/websockets": "^10.4.22",
+    "@stackly/proto": "workspace:*",
+    "@stackly/wasm": "workspace:*",
     "bcrypt": "^6.0.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

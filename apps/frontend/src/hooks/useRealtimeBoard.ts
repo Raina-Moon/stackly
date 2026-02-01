@@ -15,6 +15,9 @@ import type {
   ColumnsReorderedEvent,
 } from '@/lib/socket';
 import type { Board, Card, Column } from '@/hooks/useBoard';
+import { decodeRealtimeMessage } from '@stackly/proto';
+
+const USE_PROTOBUF = process.env.NEXT_PUBLIC_USE_PROTOBUF === 'true';
 
 export function useRealtimeBoard(boardId: string | undefined) {
   const queryClient = useQueryClient();
@@ -214,6 +217,37 @@ export function useRealtimeBoard(boardId: string | undefined) {
     socket.on('column_deleted', handleColumnDeleted);
     socket.on('columns_reordered', handleColumnsReordered);
 
+    // Binary protobuf listeners
+    const handleCardMovedBin = (data: ArrayBuffer) => {
+      const msg = decodeRealtimeMessage(new Uint8Array(data));
+      const card = msg.cardMoved;
+      if (!card?.boardId || !card.cardId) return;
+      handleCardMoved({
+        boardId: card.boardId,
+        cardId: card.cardId,
+        sourceColumnId: card.sourceColumnId ?? '',
+        targetColumnId: card.targetColumnId ?? '',
+        position: card.position ?? 0,
+        userId: card.userId ?? '',
+      });
+    };
+
+    const handleColumnsReorderedBin = (data: ArrayBuffer) => {
+      const msg = decodeRealtimeMessage(new Uint8Array(data));
+      const reorder = msg.columnsReordered;
+      if (!reorder?.boardId) return;
+      handleColumnsReordered({
+        boardId: reorder.boardId,
+        columnIds: reorder.columnIds ?? [],
+        userId: reorder.userId ?? '',
+      });
+    };
+
+    if (USE_PROTOBUF) {
+      socket.on('card_moved:bin', handleCardMovedBin);
+      socket.on('columns_reordered:bin', handleColumnsReorderedBin);
+    }
+
     return () => {
       socket.off('card_moved', handleCardMoved);
       socket.off('card_updated', handleCardUpdated);
@@ -223,6 +257,10 @@ export function useRealtimeBoard(boardId: string | undefined) {
       socket.off('column_updated', handleColumnUpdated);
       socket.off('column_deleted', handleColumnDeleted);
       socket.off('columns_reordered', handleColumnsReordered);
+      if (USE_PROTOBUF) {
+        socket.off('card_moved:bin', handleCardMovedBin);
+        socket.off('columns_reordered:bin', handleColumnsReorderedBin);
+      }
     };
   }, [boardId, isConnected, queryClient, user?.id, getUserNickname, showToast]);
 }

@@ -4,6 +4,9 @@ import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSocket } from '@/lib/socket';
 import type { VoiceOfferEvent, VoiceAnswerEvent, VoiceIceCandidateEvent } from '@/lib/socket';
+import { createAudioLevel } from '@stackly/proto';
+
+const USE_PROTOBUF = process.env.NEXT_PUBLIC_USE_PROTOBUF === 'true';
 
 interface PeerConnection {
   peerId: string;
@@ -233,7 +236,11 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
         // Emit to socket if speaking (level > threshold)
         const socket = getSocket();
         if (socket && boardId && normalizedLevel > 0.05) {
-          socket.emit('voice_audio_level', { boardId, level: normalizedLevel });
+          if (USE_PROTOBUF) {
+            socket.emit('audio_level:bin', createAudioLevel(boardId, normalizedLevel));
+          } else {
+            socket.emit('voice_audio_level', { boardId, level: normalizedLevel });
+          }
         }
       }, 50); // Update 20 times per second
     } catch (err) {

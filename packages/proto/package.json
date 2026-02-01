@@ -1,0 +1,33 @@
+{
+  "name": "@stackly/proto",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src/generated"
+  ],
+  "scripts": {
+    "build": "yarn build:proto && yarn build:ts",
+    "build:proto": "npx pbjs -t static-module -w es6 --es6 -o src/generated/messages.js src/messages.proto && npx pbts -o src/generated/messages.d.ts src/generated/messages.js",
+    "build:ts": "tsc && node -e \"const fs=require('fs');const p=require('path');fs.mkdirSync(p.join('dist','generated'),{recursive:true});fs.copyFileSync(p.join('src','generated','messages.js'),p.join('dist','generated','messages.js'));fs.copyFileSync(p.join('src','generated','messages.d.ts'),p.join('dist','generated','messages.d.ts'));\"",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist src/generated"
+  },
+  "dependencies": {
+    "protobufjs": "^7.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "protobufjs-cli": "^1.1.2",
+    "typescript": "^5.0.0"
+  }
+}

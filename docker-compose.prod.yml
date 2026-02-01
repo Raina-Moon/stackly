@@ -25,36 +25,19 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${POSTGRES_USER}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
-      DATABASE_NAME: ${POSTGRES_DB}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       PORT: 3001
     ports:
       - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - stackly-network
-
-  frontend:
-    build:
-      context: .
-      dockerfile: apps/frontend/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:3001}
-    container_name: stackly-frontend
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
     networks:
       - stackly-network
 

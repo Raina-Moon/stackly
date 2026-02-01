@@ -12,11 +12,13 @@ COPY .yarn ./.yarn
 
 # Copy workspace package files
 COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/proto/package.json ./packages/proto/
 
 # Install dependencies
 RUN yarn install --immutable
 
 # Copy source code
+COPY packages/proto ./packages/proto
 COPY apps/frontend ./apps/frontend
 
 # Build arguments for environment variables
@@ -26,8 +28,9 @@ ARG NEXT_PUBLIC_WS_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
-# Build the application
-RUN yarn workspace @stackly/frontend build
+# Build proto then frontend
+RUN yarn workspace @stackly/proto build && \
+    yarn workspace @stackly/frontend build
 
 # Production stage
 FROM node:20-alpine AS production

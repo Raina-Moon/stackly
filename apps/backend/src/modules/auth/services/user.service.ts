@@ -106,4 +106,28 @@ export class UserService {
   async updateLastLogin(id: string): Promise<void> {
     await this.userRepository.update(id, { lastLoginAt: new Date() });
   }
+
+  async search(query: string, excludeUserId?: string): Promise<User[]> {
+    if (!query || query.trim().length < 2) {
+      return [];
+    }
+
+    const searchQuery = query.trim().toLowerCase();
+
+    const qb = this.userRepository.createQueryBuilder('user');
+    qb.where('user.deletedAt IS NULL');
+    qb.andWhere(
+      '(LOWER(user.nickname) LIKE :query OR LOWER(user.email) LIKE :query)',
+      { query: `%${searchQuery}%` },
+    );
+
+    if (excludeUserId) {
+      qb.andWhere('user.id != :excludeUserId', { excludeUserId });
+    }
+
+    qb.orderBy('user.nickname', 'ASC');
+    qb.take(20);
+
+    return qb.getMany();
+  }
 }

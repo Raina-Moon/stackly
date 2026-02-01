@@ -74,6 +74,14 @@ export interface CreateBoardDto {
   isTemplate?: boolean;
 }
 
+export interface UpdateBoardDto {
+  name?: string;
+  description?: string;
+  color?: string;
+  isTemplate?: boolean;
+  isArchived?: boolean;
+}
+
 export interface BoardInviteInfo {
   id: string;
   name: string;
@@ -127,7 +135,7 @@ export function useUpdateBoard() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CreateBoardDto> }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateBoardDto }) =>
       api.put<Board>(`/boards/${id}`, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['boards'] });
@@ -193,5 +201,27 @@ export function useRemoveBoardMember() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['board', variables.boardId] });
     },
+  });
+}
+
+// Toggle favorite status for a board
+export function useFavoriteBoard() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (boardId: string) =>
+      api.post<{ isFavorite: boolean }>(`/boards/${boardId}/favorite`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['boards'] });
+      queryClient.invalidateQueries({ queryKey: ['board-favorites'] });
+    },
+  });
+}
+
+// Get favorite board IDs
+export function useGetFavorites() {
+  return useQuery({
+    queryKey: ['board-favorites'],
+    queryFn: () => api.get<{ favoriteIds: string[] }>('/boards/user/favorites'),
   });
 }

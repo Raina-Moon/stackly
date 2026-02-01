@@ -117,4 +117,15 @@ export class BoardController {
     const board = await this.boardService.findById(id);
     return { inviteCode: board.inviteCode };
   }
+
+  @Post(':id/favorite')
+  async toggleFavorite(@Param('id') id: string, @GetUser() user: AuthUser) {
+    return this.boardService.toggleFavorite(id, user.id);
+  }
+
+  @Get('user/favorites')
+  async getFavorites(@GetUser() user: AuthUser) {
+    const favoriteIds = await this.boardService.getFavoriteIds(user.id);
+    return { favoriteIds };
+  }
 }

@@ -203,4 +203,28 @@ export class BoardService {
       .filter((m) => m.board && !m.board.deletedAt)
       .map((m) => m.board);
   }
+
+  async toggleFavorite(boardId: string, userId: string): Promise<{ isFavorite: boolean }> {
+    const member = await this.boardMemberRepository.findOne({
+      where: { boardId, userId },
+    });
+
+    if (!member) {
+      throw new ForbiddenException('이 보드에 접근 권한이 없습니다.');
+    }
+
+    member.isFavorite = !member.isFavorite;
+    await this.boardMemberRepository.save(member);
+
+    return { isFavorite: member.isFavorite };
+  }
+
+  async getFavoriteIds(userId: string): Promise<string[]> {
+    const memberships = await this.boardMemberRepository.find({
+      where: { userId, isFavorite: true },
+      select: ['boardId'],
+    });
+
+    return memberships.map((m) => m.boardId);
+  }
 }

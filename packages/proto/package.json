@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "yarn build:proto && yarn build:ts",
-    "build:proto": "npx pbjs -t static-module -w es6 --es6 -o src/generated/messages.js src/messages.proto && npx pbts -o src/generated/messages.d.ts src/generated/messages.js",
+    "build:proto": "mkdir -p src/generated && npx pbjs -t static-module -w es6 --es6 -o src/generated/messages.js src/messages.proto && node -e 'const fs=require(\"fs\");const p=\"src/generated/messages.js\";let c=fs.readFileSync(p,\"utf8\");c=c.replace(\"protobufjs/minimal\",\"protobufjs/minimal.js\");c=c.replace(\"import * as $protobuf from \\\"protobufjs/minimal.js\\\";\",\"import $protobuf from \\\"protobufjs/minimal.js\\\";\");fs.writeFileSync(p,c);' && npx pbts -o src/generated/messages.d.ts src/generated/messages.js",
     "build:ts": "tsc && node -e \"const fs=require('fs');const p=require('path');fs.mkdirSync(p.join('dist','generated'),{recursive:true});fs.copyFileSync(p.join('src','generated','messages.js'),p.join('dist','generated','messages.js'));fs.copyFileSync(p.join('src','generated','messages.d.ts'),p.join('dist','generated','messages.d.ts'));\"",
     "dev": "tsc --watch",
     "clean": "rm -rf dist src/generated"

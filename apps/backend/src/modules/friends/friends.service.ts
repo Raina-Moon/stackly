@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, In } from 'typeorm';
+import { Repository, Not, In, IsNull } from 'typeorm';
 import { Friend, FriendshipStatus } from '../../entities/friend.entity';
 import { User } from '../../entities/user.entity';
 import { BoardMember } from '../../entities/board-member.entity';
@@ -39,7 +39,7 @@ export class FriendsService {
 
     // Check if addressee exists
     const addressee = await this.userRepository.findOne({
-      where: { id: addresseeId, deletedAt: null },
+      where: { id: addresseeId, deletedAt: IsNull() },
     });
     if (!addressee) {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');

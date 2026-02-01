@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { resolve } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -20,7 +21,10 @@ import { FriendsModule } from './modules/friends/friends.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        resolve(process.cwd(), '..', '..', '.env'),
+        resolve(process.cwd(), '.env'),
+      ],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

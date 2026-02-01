@@ -35,6 +35,10 @@ import {
   AuthUser,
   UserPresence,
 } from './dto/socket-events.dto';
+import {
+  decodeRealtimeMessage,
+  encodeRealtimeMessage,
+} from '@stackly/proto';
 
 @WebSocketGateway({
   cors: {
@@ -454,5 +458,139 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       userId: user.id,
       level: data.level,
     });
+  }
+
+  // ============ Binary Protobuf Handlers ============
+
+  @SubscribeMessage('cursor_move:bin')
+  async handleCursorMoveBin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: Buffer,
+  ): Promise<void> {
+    const user = this.getUser(client);
+    const msg = decodeRealtimeMessage(new Uint8Array(data));
+    const cursor = msg.cursorMove;
+    if (!cursor?.boardId) return;
+
+    this.realtimeService.updateCursor(cursor.boardId, user.id, cursor.x ?? 0, cursor.y ?? 0);
+
+    const response = encodeRealtimeMessage({
+      cursorUpdate: {
+        userId: user.id,
+        boardId: cursor.boardId,
+        x: cursor.x,
+        y: cursor.y,
+      },
+    });
+    client.to(`board:${cursor.boardId}`).emit('cursor_updated:bin', Buffer.from(response));
+  }
+
+  @SubscribeMessage('drag_start:bin')
+  async handleDragStartBin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: Buffer,
+  ): Promise<void> {
+    const user = this.getUser(client);
+    const msg = decodeRealtimeMessage(new Uint8Array(data));
+    const drag = msg.dragStart;
+    if (!drag?.boardId) return;
+
+    this.realtimeService.setDragState(drag.boardId, user.id, true, {
+      type: (drag.itemType as 'card' | 'column') ?? 'card',
+      id: drag.itemId ?? '',
+    });
+
+    const response = encodeRealtimeMessage({
+      dragStarted: {
+        userId: user.id,
+        boardId: drag.boardId,
+        itemType: drag.itemType,
+        itemId: drag.itemId,
+      },
+    });
+    client.to(`board:${drag.boardId}`).emit('drag_started:bin', Buffer.from(response));
+  }
+
+  @SubscribeMessage('drag_end:bin')
+  async handleDragEndBin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: Buffer,
+  ): Promise<void> {
+    const user = this.getUser(client);
+    const msg = decodeRealtimeMessage(new Uint8Array(data));
+    const drag = msg.dragEnd;
+    if (!drag?.boardId) return;
+
+    this.realtimeService.setDragState(drag.boardId, user.id, false);
+
+    const response = encodeRealtimeMessage({
+      dragEnded: {
+        userId: user.id,
+        boardId: drag.boardId,
+      },
+    });
+    client.to(`board:${drag.boardId}`).emit('drag_ended:bin', Buffer.from(response));
+  }
+
+  @SubscribeMessage('card_move:bin')
+  async handleCardMoveBin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: Buffer,
+  ): Promise<void> {
+    const user = this.getUser(client);
+    const msg = decodeRealtimeMessage(new Uint8Array(data));
+    const card = msg.cardMove;
+    if (!card?.boardId) return;
+
+    const response = encodeRealtimeMessage({
+      cardMoved: {
+        boardId: card.boardId,
+        cardId: card.cardId,
+        sourceColumnId: card.sourceColumnId,
+        targetColumnId: card.targetColumnId,
+        position: card.position,
+        userId: user.id,
+      },
+    });
+    client.to(`board:${card.boardId}`).emit('card_moved:bin', Buffer.from(response));
+  }
+
+  @SubscribeMessage('column_reorder:bin')
+  async handleColumnReorderBin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: Buffer,
+  ): Promise<void> {
+    const user = this.getUser(client);
+    const msg = decodeRealtimeMessage(new Uint8Array(data));
+    const reorder = msg.columnReorder;
+    if (!reorder?.boardId) return;
+
+    const response = encodeRealtimeMessage({
+      columnsReordered: {
+        boardId: reorder.boardId,
+        columnIds: reorder.columnIds,
+        userId: user.id,
+      },
+    });
+    client.to(`board:${reorder.boardId}`).emit('columns_reordered:bin', Buffer.from(response));
+  }
+
+  @SubscribeMessage('audio_level:bin')
+  async handleAudioLevelBin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: Buffer,
+  ): Promise<void> {
+    const user = this.getUser(client);
+    const msg = decodeRealtimeMessage(new Uint8Array(data));
+    const audio = msg.audioLevel;
+    if (!audio?.boardId) return;
+
+    const response = encodeRealtimeMessage({
+      audioLevelUpdate: {
+        userId: user.id,
+        level: audio.level,
+      },
+    });
+    client.to(`board:${audio.boardId}`).emit('audio_level:bin', Buffer.from(response));
   }
 }

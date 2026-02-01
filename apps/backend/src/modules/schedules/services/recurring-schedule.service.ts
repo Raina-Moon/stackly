@@ -1,16 +1,33 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { RecurringSchedule } from '../../../entities/recurring-schedule.entity';
 import { CreateRecurringScheduleDto } from '../dto/create-recurring-schedule.dto';
 import { UpdateRecurringScheduleDto } from '../dto/update-recurring-schedule.dto';
 
+// Try to load WASM module, fall back to JS if unavailable
+let wasmModule: { calculate_occurrences: (input: unknown, start: string, end: string) => { dates: string[] } } | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  wasmModule = require('@stackly/wasm');
+} catch {
+  // WASM not available, will use JS fallback
+}
+
 @Injectable()
 export class RecurringScheduleService {
+  private readonly logger = new Logger(RecurringScheduleService.name);
+
   constructor(
     @InjectRepository(RecurringSchedule)
     private recurringScheduleRepository: Repository<RecurringSchedule>,
-  ) {}
+  ) {
+    if (wasmModule) {
+      this.logger.log('WASM module loaded for recurring schedule calculations');
+    } else {
+      this.logger.warn('WASM module not available, using JS fallback');
+    }
+  }
 
   async create(createRecurringScheduleDto: CreateRecurringScheduleDto): Promise<RecurringSchedule> {
     const recurring = this.recurringScheduleRepository.create(createRecurringScheduleDto);
@@ -71,23 +88,49 @@ export class RecurringScheduleService {
     endDate: Date,
   ): Promise<Date[]> {
     const recurring = await this.findById(id);
+
+    const rangeStart = startDate.toISOString().split('T')[0];
+    const rangeEnd = endDate.toISOString().split('T')[0];
+
+    // Use WASM if available
+    if (wasmModule) {
+      const input = {
+        frequency: recurring.frequency,
+        interval: recurring.interval || 1,
+        start_date: new Date(recurring.startDate).toISOString().split('T')[0],
+        end_date: recurring.endDate
+          ? new Date(recurring.endDate).toISOString().split('T')[0]
+          : null,
+        max_occurrences: recurring.occurrences ?? null,
+        excluded_dates: recurring.excludedDates ?? [],
+        days_of_week: recurring.daysOfWeek ?? [],
+        day_of_month: recurring.dayOfMonth ?? null,
+      };
+
+      const result = wasmModule.calculate_occurrences(input, rangeStart, rangeEnd);
+      return (result.dates as string[]).map((d: string) => new Date(d));
+    }
+
+    // JS fallback
+    return this.calculateOccurrencesJS(recurring, startDate, endDate);
+  }
+
+  private calculateOccurrencesJS(
+    recurring: RecurringSchedule,
+    startDate: Date,
+    endDate: Date,
+  ): Date[] {
     const occurrences: Date[] = [];
-
-    // TODO: This is where WebAssembly optimization will be integrated
-    // For now, we'll implement a basic algorithm
-
     let current = new Date(recurring.startDate);
 
     while (current <= endDate) {
       if (current >= startDate) {
-        // Check if date is not excluded
         const dateStr = current.toISOString().split('T')[0];
         if (!recurring.excludedDates?.includes(dateStr)) {
           occurrences.push(new Date(current));
         }
       }
 
-      // Move to next occurrence
       switch (recurring.frequency) {
         case 'daily':
           current.setDate(current.getDate() + (recurring.interval || 1));
@@ -103,7 +146,6 @@ export class RecurringScheduleService {
           break;
       }
 
-      // Check if we've exceeded end date or occurrences
       if (recurring.endDate && current > recurring.endDate) {
         break;
       }

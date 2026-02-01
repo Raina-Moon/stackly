@@ -1,0 +1,20 @@
+{
+  "name": "@stackly/wasm",
+  "version": "0.1.0",
+  "private": true,
+  "main": "pkg/stackly_wasm.js",
+  "types": "pkg/stackly_wasm.d.ts",
+  "files": [
+    "pkg"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:web": "wasm-pack build --target web --out-dir pkg-web",
+    "test": "cargo test",
+    "clean": "rm -rf pkg pkg-web target"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "wasm-pack": "^0.14.0"
+  }
+}

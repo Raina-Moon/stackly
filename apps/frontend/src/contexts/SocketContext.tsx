@@ -17,6 +17,17 @@ import {
   UserPresence,
   BoardSyncData,
 } from '@/lib/socket';
+import {
+  decodeRealtimeMessage,
+  createCursorMove,
+  createDragStart,
+  createDragEnd,
+  createCardMove,
+  createAudioLevel,
+  encodeRealtimeMessage,
+} from '@stackly/proto';
+
+const USE_PROTOBUF = process.env.NEXT_PUBLIC_USE_PROTOBUF === 'true';
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
@@ -160,6 +171,57 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         );
       });
 
+      // Binary protobuf listeners (when feature flag is enabled)
+      if (USE_PROTOBUF) {
+        sock.on('cursor_updated:bin', (data: ArrayBuffer) => {
+          const msg = decodeRealtimeMessage(new Uint8Array(data));
+          const cursor = msg.cursorUpdate;
+          if (!cursor?.userId) return;
+          setOnlineUsers((prev) =>
+            prev.map((u) =>
+              u.id === cursor.userId
+                ? { ...u, cursor: { x: cursor.x ?? 0, y: cursor.y ?? 0 } }
+                : u
+            )
+          );
+        });
+
+        sock.on('drag_started:bin', (data: ArrayBuffer) => {
+          const msg = decodeRealtimeMessage(new Uint8Array(data));
+          const drag = msg.dragStarted;
+          if (!drag?.userId) return;
+          setOnlineUsers((prev) =>
+            prev.map((u) =>
+              u.id === drag.userId
+                ? { ...u, isDragging: true, dragItem: { type: (drag.itemType as 'card' | 'column') ?? 'card', id: drag.itemId ?? '' } }
+                : u
+            )
+          );
+        });
+
+        sock.on('drag_ended:bin', (data: ArrayBuffer) => {
+          const msg = decodeRealtimeMessage(new Uint8Array(data));
+          const drag = msg.dragEnded;
+          if (!drag?.userId) return;
+          setOnlineUsers((prev) =>
+            prev.map((u) =>
+              u.id === drag.userId ? { ...u, isDragging: false, dragItem: undefined } : u
+            )
+          );
+        });
+
+        sock.on('audio_level:bin', (data: ArrayBuffer) => {
+          const msg = decodeRealtimeMessage(new Uint8Array(data));
+          const audio = msg.audioLevelUpdate;
+          if (!audio?.userId) return;
+          setOnlineUsers((prev) =>
+            prev.map((u) =>
+              u.id === audio.userId ? { ...u, audioLevel: audio.level ?? 0 } : u
+            )
+          );
+        });
+      }
+
       return () => {
         disconnectSocket();
         setSocket(null);
@@ -198,7 +260,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     (boardId: string, x: number, y: number) => {
       const sock = getSocket();
       if (sock && isConnected) {
-        sock.emit('cursor_move', { boardId, x, y });
+        if (USE_PROTOBUF) {
+          sock.emit('cursor_move:bin', createCursorMove(boardId, x, y));
+        } else {
+          sock.emit('cursor_move', { boardId, x, y });
+        }
       }
     },
     [isConnected]
@@ -208,7 +274,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     (boardId: string, itemType: 'card' | 'column', itemId: string) => {
       const sock = getSocket();
       if (sock && isConnected) {
-        sock.emit('drag_start', { boardId, itemType, itemId });
+        if (USE_PROTOBUF) {
+          sock.emit('drag_start:bin', createDragStart(boardId, itemType, itemId));
+        } else {
+          sock.emit('drag_start', { boardId, itemType, itemId });
+        }
       }
     },
     [isConnected]
@@ -218,7 +288,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     (boardId: string) => {
       const sock = getSocket();
       if (sock && isConnected) {
-        sock.emit('drag_end', { boardId });
+        if (USE_PROTOBUF) {
+          sock.emit('drag_end:bin', createDragEnd(boardId));
+        } else {
+          sock.emit('drag_end', { boardId });
+        }
       }
     },
     [isConnected]
@@ -234,7 +308,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }) => {
       const sock = getSocket();
       if (sock && isConnected) {
-        sock.emit('card_move', data);
+        if (USE_PROTOBUF) {
+          sock.emit('card_move:bin', createCardMove(
+            data.boardId, data.cardId, data.sourceColumnId, data.targetColumnId, data.position
+          ));
+        } else {
+          sock.emit('card_move', data);
+        }
       }
     },
     [isConnected]
@@ -304,7 +384,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     (data: { boardId: string; columnIds: string[] }) => {
       const sock = getSocket();
       if (sock && isConnected) {
-        sock.emit('column_reorder', data);
+        if (USE_PROTOBUF) {
+          sock.emit('column_reorder:bin', encodeRealtimeMessage({
+            columnReorder: { boardId: data.boardId, columnIds: data.columnIds },
+          }));
+        } else {
+          sock.emit('column_reorder', data);
+        }
       }
     },
     [isConnected]

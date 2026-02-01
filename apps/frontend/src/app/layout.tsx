@@ -1,26 +1,21 @@
-import type { Metadata } from 'next'
-import { Providers } from '@/providers'
+import { cookies } from 'next/headers'
 import './globals.css'
 
-export const metadata: Metadata = {
-  title: 'Stackly - Kanban Board & Schedule Management',
-  description: 'High performance scheduling engine designed to turn project chaos into visual clarity',
-}
+const fallbackLocale = 'en'
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = cookies().get('NEXT_LOCALE')?.value ?? fallbackLocale
+
   return (
-    <html lang="en">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+    <html lang={locale}>
+      <body>{children}</body>
     </html>
   )
 }
-
 
 
 

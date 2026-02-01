@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 interface BoardCardProps {
   id?: string;
   name: string;
@@ -18,6 +20,8 @@ export default function BoardCard({
   isNew = false,
   onClick,
 }: BoardCardProps) {
+  const t = useTranslations('boardCard');
+
   if (isNew) {
     return (
       <button
@@ -34,7 +38,9 @@ export default function BoardCard({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </div>
-        <span className="mt-3 text-gray-500 group-hover:text-blue-600 font-medium">새 보드 만들기</span>
+        <span className="mt-3 text-gray-500 group-hover:text-blue-600 font-medium">
+          {t('createNew')}
+        </span>
       </button>
     );
   }
@@ -64,7 +70,7 @@ export default function BoardCard({
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          <span>{cardCount}개의 카드</span>
+          <span>{t('cardCount', { count: cardCount })}</span>
         </div>
       </div>
     </button>

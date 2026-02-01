@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface LoginModalProps {
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const router = useRouter();
+  const t = useTranslations('auth');
 
   if (!isOpen) return null;
 
@@ -37,7 +39,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white text-center">
           <Image src="/images/stackly_logo.png" alt="Stackly Logo" width={100} height={100} className='mx-auto'/>
-          <p className="mt-2 opacity-90">로그인이 필요합니다</p>
+          <p className="mt-2 opacity-90">{t('loginRequiredTitle')}</p>
         </div>
 
         {/* Close button */}
@@ -53,21 +55,21 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         {/* Content */}
         <div className="p-6 space-y-4">
           <p className="text-center text-gray-600">
-            이 기능을 사용하려면 로그인이 필요합니다.
+            {t('loginRequiredBody')}
           </p>
 
           <button
             onClick={handleLogin}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >
-            로그인
+            {t('loginRequiredLogin')}
           </button>
 
           <button
             onClick={handleRegister}
             className="w-full py-3 border-2 border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
           >
-            회원가입
+            {t('loginRequiredRegister')}
           </button>
         </div>
 

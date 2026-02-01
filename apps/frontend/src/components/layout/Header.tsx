@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
+  const t = useTranslations('header');
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
@@ -25,7 +27,7 @@ export default function Header() {
           </svg>
           <input
             type="text"
-            placeholder="보드, 카드 검색..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -53,7 +55,7 @@ export default function Header() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span>새 보드</span>
+          <span>{t('newBoard')}</span>
         </button>
       </div>
     </header>

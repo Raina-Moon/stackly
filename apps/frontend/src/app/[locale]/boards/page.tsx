@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import CreateBoardModal from '@/components/board/CreateBoardModal';
 import LoginModal from '@/components/auth/LoginModal';

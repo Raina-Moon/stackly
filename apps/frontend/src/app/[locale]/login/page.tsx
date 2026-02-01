@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { Link, useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import Input from '@/components/ui/Input';
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useTranslations('auth');
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const { showToast } = useToast();
 
@@ -44,7 +45,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     if (!email || !password) {
-      setError('이메일과 비밀번호를 입력해주세요');
+      setError(t('loginMissingFields'));
       return;
     }
 
@@ -54,7 +55,7 @@ export default function LoginPage() {
     const result = await login(email, password, rememberMe);
 
     if (result.success) {
-      showToast('로그인 성공!', 'success');
+      showToast(t('loginSuccess'), 'success');
 
       // Check for pending invite
       const pendingInvite = sessionStorage.getItem('pendingInvite');
@@ -97,8 +98,8 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white text-center">
-            <h2 className="text-2xl font-bold">로그인</h2>
-            <p className="mt-2 opacity-90">계정에 로그인하세요</p>
+            <h2 className="text-2xl font-bold">{t('loginTitle')}</h2>
+            <p className="mt-2 opacity-90">{t('loginSubtitle')}</p>
           </div>
 
           {/* Form */}
@@ -106,7 +107,7 @@ export default function LoginPage() {
             <Input
               type="email"
               id="email"
-              label="이메일"
+              label={t('email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
@@ -116,7 +117,7 @@ export default function LoginPage() {
             <Input
               type="password"
               id="password"
-              label="비밀번호"
+              label={t('password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -131,10 +132,10 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                로그인 상태 유지
+                {t('rememberMe')}
               </label>
               <button type="button" className="text-blue-600 hover:text-blue-700">
-                비밀번호 찾기
+                {t('forgotPassword')}
               </button>
             </div>
 
@@ -145,15 +146,15 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? '로그인 중...' : '로그인'}
+              {isLoading ? t('loggingIn') : t('loginButton')}
             </button>
           </form>
 
           {/* Footer */}
           <div className="px-6 pb-6 text-center text-sm" style={{ color: 'var(--gray-600)' }}>
-            계정이 없으신가요?{' '}
+            {t('noAccount')}{' '}
             <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
-              회원가입
+              {t('register')}
             </Link>
           </div>
         </div>
@@ -161,7 +162,7 @@ export default function LoginPage() {
         {/* Back to home */}
         <div className="mt-6 text-center">
           <Link href="/" className="text-sm hover:opacity-80" style={{ color: 'var(--gray-500)' }}>
-            ← 홈으로 돌아가기
+            ← {t('backHome')}
           </Link>
         </div>
       </div>

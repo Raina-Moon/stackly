@@ -1,17 +1,18 @@
 'use client';
 
+import { useLocale, useTranslations } from 'next-intl';
+
 interface ScheduleItem {
   id: string;
-  title: string;
+  titleKey: 'demoMeeting' | 'demoDeadline' | 'demoReview';
   time: string;
   type: 'event' | 'deadline' | 'reminder';
 }
 
-// 데모 데이터
 const demoSchedules: ScheduleItem[] = [
-  { id: '1', title: '팀 회의', time: '10:00', type: 'event' },
-  { id: '2', title: '프로젝트 A 마감', time: '14:00', type: 'deadline' },
-  { id: '3', title: '코드 리뷰', time: '16:00', type: 'reminder' },
+  { id: '1', titleKey: 'demoMeeting', time: '10:00', type: 'event' },
+  { id: '2', titleKey: 'demoDeadline', time: '14:00', type: 'deadline' },
+  { id: '3', titleKey: 'demoReview', time: '16:00', type: 'reminder' },
 ];
 
 const typeStyles = {
@@ -43,8 +44,10 @@ interface TodayScheduleProps {
 }
 
 export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
+  const t = useTranslations('schedule');
+  const locale = useLocale();
   const today = new Date();
-  const formattedDate = today.toLocaleDateString('ko-KR', {
+  const formattedDate = today.toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', {
     month: 'long',
     day: 'numeric',
     weekday: 'long',
@@ -54,11 +57,11 @@ export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">오늘 일정</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('title')}</h2>
           <p className="text-sm text-gray-500">{formattedDate}</p>
         </div>
         <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-          전체 보기
+          {t('viewAll')}
         </button>
       </div>
 
@@ -67,7 +70,7 @@ export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
           <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p>오늘 예정된 일정이 없습니다</p>
+          <p>{t('empty')}</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -78,7 +81,9 @@ export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
                 className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors hover:bg-gray-50 ${typeStyles[schedule.type]}`}
               >
                 {typeIcons[schedule.type]}
-                <span className="flex-1 text-left font-medium">{schedule.title}</span>
+                <span className="flex-1 text-left font-medium">
+                  {t(schedule.titleKey)}
+                </span>
                 <span className="text-sm opacity-75">{schedule.time}</span>
               </button>
             </li>
@@ -91,7 +96,7 @@ export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
-        일정 추가
+        {t('add')}
       </button>
     </div>
   );

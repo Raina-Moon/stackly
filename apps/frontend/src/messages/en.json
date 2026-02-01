@@ -1,0 +1,64 @@
+{
+  "common": {
+    "appName": "Stackly",
+    "loading": "Loading..."
+  },
+  "sidebar": {
+    "home": "Home",
+    "boards": "Boards",
+    "schedule": "Schedule",
+    "settings": "Settings",
+    "login": "Log in",
+    "logout": "Log out",
+    "logoutSuccess": "Logged out successfully.",
+    "loggingOut": "Logging out...",
+    "language": "Language",
+    "languageEnglish": "English",
+    "languageKorean": "Korean"
+  },
+  "header": {
+    "searchPlaceholder": "Search boards, cards...",
+    "newBoard": "New board"
+  },
+  "home": {
+    "welcomeGuest": "Welcome!",
+    "welcomeUser": "Hi, {name}!",
+    "subtitleAuthed": "Have a productive day today",
+    "subtitleGuest": "Log in to manage your boards",
+    "myBoards": "My boards",
+    "viewAll": "View all",
+    "loginToCreate": "Log in to create and manage boards"
+  },
+  "boardCard": {
+    "createNew": "Create new board",
+    "cardCount": "{count} cards"
+  },
+  "schedule": {
+    "title": "Today's schedule",
+    "viewAll": "View all",
+    "empty": "No events scheduled today",
+    "add": "Add schedule",
+    "demoMeeting": "Team meeting",
+    "demoDeadline": "Project A deadline",
+    "demoReview": "Code review"
+  },
+  "auth": {
+    "loginTitle": "Log in",
+    "loginSubtitle": "Sign in to your account",
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Keep me signed in",
+    "forgotPassword": "Forgot password",
+    "loginButton": "Log in",
+    "loggingIn": "Logging in...",
+    "noAccount": "Don't have an account?",
+    "register": "Sign up",
+    "backHome": "Back to home",
+    "loginRequiredTitle": "Login required",
+    "loginRequiredBody": "You need to log in to use this feature.",
+    "loginRequiredLogin": "Log in",
+    "loginRequiredRegister": "Sign up",
+    "loginSuccess": "Logged in successfully!",
+    "loginMissingFields": "Please enter your email and password"
+  }
+}

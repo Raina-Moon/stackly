@@ -1,18 +1,18 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import LoginModal from '../auth/LoginModal';
 
 const menuItems = [
-  { name: '홈', href: '/', icon: 'home' },
-  { name: '보드', href: '/boards', icon: 'board' },
-  { name: '일정', href: '/schedule', icon: 'calendar' },
-  { name: '설정', href: '/settings', icon: 'settings' },
+  { nameKey: 'home', href: '/', icon: 'home' },
+  { nameKey: 'boards', href: '/boards', icon: 'board' },
+  { nameKey: 'schedule', href: '/schedule', icon: 'calendar' },
+  { nameKey: 'settings', href: '/settings', icon: 'settings' },
 ];
 
 const icons: Record<string, JSX.Element> = {
@@ -40,7 +40,9 @@ const icons: Record<string, JSX.Element> = {
 };
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const t = useTranslations('sidebar');
+  const locale = useLocale();
+  const pathname = usePathname() || '/';
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
   const { showToast } = useToast();
@@ -50,7 +52,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await logout();
-    showToast('로그아웃 되었습니다', 'success');
+    showToast(t('logoutSuccess'), 'success');
     router.push('/login');
     setIsLoggingOut(false);
   };
@@ -68,7 +70,7 @@ export default function Sidebar() {
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <li key={item.name}>
+              <li key={item.nameKey}>
                 <Link
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -78,7 +80,7 @@ export default function Sidebar() {
                   }`}
                 >
                   {icons[item.icon]}
-                  <span>{item.name}</span>
+                  <span>{t(item.nameKey)}</span>
                 </Link>
               </li>
             );
@@ -110,14 +112,14 @@ export default function Sidebar() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  로그아웃 중...
+                  {t('loggingOut')}
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  로그아웃
+                  {t('logout')}
                 </>
               )}
             </button>
@@ -132,9 +134,37 @@ export default function Sidebar() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <span>로그인</span>
+            <span>{t('login')}</span>
           </button>
         )}
+
+        <div className="mt-4 border-t border-gray-800 pt-4">
+          <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">{t('language')}</p>
+          <div className="flex gap-2">
+            <Link
+              href={pathname}
+              locale="en"
+              className={`flex-1 text-center text-xs rounded-md py-2 ${
+                locale === 'en'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-800 text-gray-300 hover:text-white'
+              }`}
+            >
+              {t('languageEnglish')}
+            </Link>
+            <Link
+              href={pathname}
+              locale="ko"
+              className={`flex-1 text-center text-xs rounded-md py-2 ${
+                locale === 'ko'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-800 text-gray-300 hover:text-white'
+              }`}
+            >
+              {t('languageKorean')}
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Login Modal */}

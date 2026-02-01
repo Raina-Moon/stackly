@@ -1,0 +1,64 @@
+{
+  "common": {
+    "appName": "Stackly",
+    "loading": "로딩 중..."
+  },
+  "sidebar": {
+    "home": "홈",
+    "boards": "보드",
+    "schedule": "일정",
+    "settings": "설정",
+    "login": "로그인",
+    "logout": "로그아웃",
+    "logoutSuccess": "로그아웃 되었습니다.",
+    "loggingOut": "로그아웃 중...",
+    "language": "언어",
+    "languageEnglish": "영어",
+    "languageKorean": "한국어"
+  },
+  "header": {
+    "searchPlaceholder": "보드, 카드 검색...",
+    "newBoard": "새 보드"
+  },
+  "home": {
+    "welcomeGuest": "환영합니다!",
+    "welcomeUser": "안녕하세요, {name}님!",
+    "subtitleAuthed": "오늘도 생산적인 하루 되세요",
+    "subtitleGuest": "로그인하여 보드를 관리하세요",
+    "myBoards": "내 보드",
+    "viewAll": "전체 보기",
+    "loginToCreate": "로그인하면 보드를 만들고 관리할 수 있습니다"
+  },
+  "boardCard": {
+    "createNew": "새 보드 만들기",
+    "cardCount": "{count}개의 카드"
+  },
+  "schedule": {
+    "title": "오늘 일정",
+    "viewAll": "전체 보기",
+    "empty": "오늘 예정된 일정이 없습니다",
+    "add": "일정 추가",
+    "demoMeeting": "팀 회의",
+    "demoDeadline": "프로젝트 A 마감",
+    "demoReview": "코드 리뷰"
+  },
+  "auth": {
+    "loginTitle": "로그인",
+    "loginSubtitle": "계정에 로그인하세요",
+    "email": "이메일",
+    "password": "비밀번호",
+    "rememberMe": "로그인 상태 유지",
+    "forgotPassword": "비밀번호 찾기",
+    "loginButton": "로그인",
+    "loggingIn": "로그인 중...",
+    "noAccount": "계정이 없으신가요?",
+    "register": "회원가입",
+    "backHome": "홈으로 돌아가기",
+    "loginRequiredTitle": "로그인이 필요합니다",
+    "loginRequiredBody": "이 기능을 사용하려면 로그인이 필요합니다.",
+    "loginRequiredLogin": "로그인",
+    "loginRequiredRegister": "회원가입",
+    "loginSuccess": "로그인 성공!",
+    "loginMissingFields": "이메일과 비밀번호를 입력해주세요"
+  }
+}

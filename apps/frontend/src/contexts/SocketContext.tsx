@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import { Socket } from 'socket.io-client';
@@ -69,7 +70,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [currentBoardId, setCurrentBoardId] = useState<string | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<UserPresence[]>([]);
   const [voiceUsers, setVoiceUsers] = useState<string[]>([]);
-  const [wasConnected, setWasConnected] = useState(false);
+  const wasConnectedRef = useRef(false);
+  const currentBoardIdRef = useRef<string | null>(null);
 
   // Connect socket when authenticated
   useEffect(() => {
@@ -79,14 +81,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       setSocket(sock);
 
       sock.on('connect', () => {
-        const wasReconnect = wasConnected;
+        const wasReconnect = wasConnectedRef.current;
         setIsConnected(true);
         setConnectionState('connected');
-        setWasConnected(true);
+        wasConnectedRef.current = true;
 
         // Re-join current board room on reconnection
-        if (wasReconnect && currentBoardId) {
-          sock.emit('join_board', { boardId: currentBoardId });
+        if (wasReconnect && currentBoardIdRef.current) {
+          sock.emit('join_board', { boardId: currentBoardIdRef.current });
         }
       });
 
@@ -227,10 +229,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         setSocket(null);
         setIsConnected(false);
         setConnectionState('disconnected');
-        setWasConnected(false);
+        wasConnectedRef.current = false;
       };
     }
-  }, [isAuthenticated, user, wasConnected, currentBoardId]);
+  }, [isAuthenticated, user]);
 
   const joinBoard = useCallback(
     (boardId: string) => {
@@ -238,6 +240,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       if (sock && isConnected) {
         sock.emit('join_board', { boardId });
         setCurrentBoardId(boardId);
+        currentBoardIdRef.current = boardId;
       }
     },
     [isConnected]
@@ -249,6 +252,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       if (sock && isConnected) {
         sock.emit('leave_board', { boardId });
         setCurrentBoardId(null);
+        currentBoardIdRef.current = null;
         setOnlineUsers([]);
         setVoiceUsers([]);
       }

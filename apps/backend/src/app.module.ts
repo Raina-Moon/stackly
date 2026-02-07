@@ -36,6 +36,9 @@ import { FriendsModule } from './modules/friends/friends.module';
           username: configService.get('DB_USERNAME'),
           password: configService.get('DB_PASSWORD'),
           database: configService.get('DB_NAME'),
+          ssl: configService.get('DB_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
           autoLoadEntities: true,
           synchronize: configService.get('NODE_ENV') !== 'production',
           entities: [User, Board, Column, Card, Schedule, RecurringSchedule, BoardMember, RefreshToken, Friend],

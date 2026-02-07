@@ -147,6 +147,13 @@ export interface ColumnsReorderedEvent {
   userId: string;
 }
 
+export interface CardsReorderedEvent {
+  boardId: string;
+  columnId: string;
+  cardIds: string[];
+  userId: string;
+}
+
 export interface CursorUpdatedEvent {
   userId: string;
   boardId: string;

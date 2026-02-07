@@ -9,6 +9,7 @@ import type {
   CardUpdatedEvent,
   CardCreatedEvent,
   CardDeletedEvent,
+  CardsReorderedEvent,
   ColumnCreatedEvent,
   ColumnUpdatedEvent,
   ColumnDeletedEvent,
@@ -189,6 +190,27 @@ export function useRealtimeBoard(boardId: string | undefined) {
       showToast(`${nickname} deleted a column`, 'info');
     };
 
+    // Cards reordered within a column by another user
+    const handleCardsReordered = (event: CardsReorderedEvent) => {
+      if (event.boardId !== boardId) return;
+      if (event.userId === user?.id) return;
+
+      queryClient.setQueryData<Board>(['board', boardId], (old) => {
+        if (!old) return old;
+
+        const cards = (old.cards || []).map((c) => {
+          if (c.columnId !== event.columnId) return c;
+          const newIndex = event.cardIds.indexOf(c.id);
+          if (newIndex !== -1) {
+            return { ...c, position: newIndex };
+          }
+          return c;
+        });
+
+        return { ...old, cards };
+      });
+    };
+
     // Columns reordered by another user
     const handleColumnsReordered = (event: ColumnsReorderedEvent) => {
       if (event.boardId !== boardId) return;
@@ -212,6 +234,7 @@ export function useRealtimeBoard(boardId: string | undefined) {
     socket.on('card_updated', handleCardUpdated);
     socket.on('card_created', handleCardCreated);
     socket.on('card_deleted', handleCardDeleted);
+    socket.on('cards_reordered', handleCardsReordered);
     socket.on('column_created', handleColumnCreated);
     socket.on('column_updated', handleColumnUpdated);
     socket.on('column_deleted', handleColumnDeleted);
@@ -253,6 +276,7 @@ export function useRealtimeBoard(boardId: string | undefined) {
       socket.off('card_updated', handleCardUpdated);
       socket.off('card_created', handleCardCreated);
       socket.off('card_deleted', handleCardDeleted);
+      socket.off('cards_reordered', handleCardsReordered);
       socket.off('column_created', handleColumnCreated);
       socket.off('column_updated', handleColumnUpdated);
       socket.off('column_deleted', handleColumnDeleted);

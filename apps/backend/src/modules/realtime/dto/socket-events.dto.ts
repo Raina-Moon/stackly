@@ -74,6 +74,12 @@ export interface ColumnReorderDto {
   columnIds: string[];
 }
 
+export interface CardReorderDto {
+  boardId: string;
+  columnId: string;
+  cardIds: string[];
+}
+
 // Presence events
 export interface CursorMoveDto {
   boardId: string;

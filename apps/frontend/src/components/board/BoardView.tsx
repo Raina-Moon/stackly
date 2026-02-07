@@ -52,6 +52,7 @@ export default function BoardView({ board }: BoardViewProps) {
     emitCardUpdate,
     emitCardCreate,
     emitCardDelete,
+    emitCardReorder,
     emitColumnCreate,
     emitColumnUpdate,
     emitColumnDelete,
@@ -315,6 +316,13 @@ export default function BoardView({ board }: BoardViewProps) {
               boardId: board.id,
               cardIds: newCards.map((c) => c.id),
             });
+
+            // Emit socket event for real-time sync
+            emitCardReorder({
+              boardId: board.id,
+              columnId: targetColumnId,
+              cardIds: newCards.map((c) => c.id),
+            });
           }
         } else {
           // Moving to different column
@@ -382,6 +390,7 @@ export default function BoardView({ board }: BoardViewProps) {
       moveCard,
       notifyDragEnd,
       emitCardMove,
+      emitCardReorder,
       emitColumnReorder,
     ]
   );

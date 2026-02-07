@@ -58,6 +58,7 @@ interface SocketContextType {
   emitColumnUpdate: (data: { boardId: string; columnId: string; updates: Record<string, unknown> }) => void;
   emitColumnDelete: (data: { boardId: string; columnId: string }) => void;
   emitColumnReorder: (data: { boardId: string; columnIds: string[] }) => void;
+  emitCardReorder: (data: { boardId: string; columnId: string; cardIds: string[] }) => void;
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -400,6 +401,16 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     [isConnected]
   );
 
+  const emitCardReorder = useCallback(
+    (data: { boardId: string; columnId: string; cardIds: string[] }) => {
+      const sock = getSocket();
+      if (sock && isConnected) {
+        sock.emit('card_reorder', data);
+      }
+    },
+    [isConnected]
+  );
+
   return (
     <SocketContext.Provider
       value={{
@@ -422,6 +433,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         emitColumnUpdate,
         emitColumnDelete,
         emitColumnReorder,
+        emitCardReorder,
       }}
     >
       {children}

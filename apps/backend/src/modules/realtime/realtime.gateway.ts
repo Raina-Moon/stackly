@@ -20,6 +20,7 @@ import {
   CardUpdateDto,
   CardCreateDto,
   CardDeleteDto,
+  CardReorderDto,
   ColumnCreateDto,
   ColumnUpdateDto,
   ColumnDeleteDto,
@@ -234,6 +235,18 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   ): Promise<void> {
     const user = this.getUser(client);
     client.to(`board:${data.boardId}`).emit('card_deleted', {
+      ...data,
+      userId: user.id,
+    });
+  }
+
+  @SubscribeMessage('card_reorder')
+  async handleCardReorder(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: CardReorderDto,
+  ): Promise<void> {
+    const user = this.getUser(client);
+    client.to(`board:${data.boardId}`).emit('cards_reordered', {
       ...data,
       userId: user.id,
     });

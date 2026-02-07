@@ -102,6 +102,9 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
           audioElementsRef.current.set(targetUserId, audioEl);
         }
         audioEl.srcObject = stream;
+        audioEl.play().catch((err) => {
+          console.error(`Failed to play audio for ${targetUserId}:`, err);
+        });
       });
 
       peer.on('error', (err) => {
@@ -141,8 +144,11 @@ export function useVoiceChat({ boardId }: UseVoiceChatOptions) {
 
     // List of existing voice users (we need to connect to them)
     const handleVoiceUsers = (data: { userIds: string[] }) => {
-      // Connect to each existing user (they will send us offers)
-      // We just prepare, actual connection happens when we receive offers
+      for (const userId of data.userIds) {
+        if (userId === user?.id) continue;
+        if (peersRef.current.has(userId)) continue;
+        createPeer(userId, true);
+      }
     };
 
     // Receive offer from another user

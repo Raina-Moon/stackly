@@ -111,7 +111,8 @@ export function useMoveCard() {
       boardId: string;
       data: MoveCardDto;
     }) => api.put<Card>(`/cards/${id}/move`, data),
-    onSuccess: (_, variables) => {
+    onError: (_, variables) => {
+      // Refetch to rollback the optimistic update applied in BoardView
       queryClient.invalidateQueries({ queryKey: ['board', variables.boardId] });
     },
   });
@@ -131,7 +132,8 @@ export function useReorderCards() {
       boardId: string;
       cardIds: string[];
     }) => api.put<void>(`/cards/column/${columnId}/reorder`, { cardIds }),
-    onSuccess: (_, variables) => {
+    onError: (_, variables) => {
+      // Refetch to rollback the optimistic update applied in BoardView
       queryClient.invalidateQueries({ queryKey: ['board', variables.boardId] });
     },
   });

@@ -68,6 +68,11 @@ export class BoardService {
       throw new NotFoundException('보드를 찾을 수 없습니다.');
     }
 
+    // Debug: log card positions when board is fetched
+    if (board.cards?.length) {
+      console.log(`[findById] Board ${id} cards:`, board.cards.map(c => `${c.id.slice(0,8)}→col:${c.columnId.slice(0,8)} pos:${c.position}`));
+    }
+
     return board;
   }
 

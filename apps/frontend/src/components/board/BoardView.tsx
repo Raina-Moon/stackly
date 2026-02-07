@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   DndContext,
   DragStartEvent,
@@ -77,6 +77,7 @@ export default function BoardView({ board }: BoardViewProps) {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [activeCard, setActiveCard] = useState<CardType | null>(null);
   const [activeColumn, setActiveColumn] = useState<ColumnType | null>(null);
+  const dragSourceColumnIdRef = useRef<string | null>(null);
 
   const queryClient = useQueryClient();
   const reorderColumns = useReorderColumns();
@@ -126,6 +127,7 @@ export default function BoardView({ board }: BoardViewProps) {
         const card = findCard(id);
         if (card) {
           setActiveCard(card);
+          dragSourceColumnIdRef.current = card.columnId;
           notifyDragStart('card', id);
         }
       } else if (type === 'column') {
@@ -168,6 +170,8 @@ export default function BoardView({ board }: BoardViewProps) {
 
       // If moving to a different column, update local state optimistically
       if (targetColumnId && targetColumnId !== activeCard.columnId) {
+        // Cancel any in-flight refetches to prevent them from overwriting optimistic updates
+        queryClient.cancelQueries({ queryKey: ['board', board.id] });
         // Check WIP limit
         const targetColumn = findColumn(targetColumnId);
         const targetColumnCards = cards.filter((c) => c.columnId === targetColumnId);
@@ -205,6 +209,9 @@ export default function BoardView({ board }: BoardViewProps) {
 
       const { type: activeType, id: activeId } = parseDndId(active.id);
       const { type: overType, id: overId } = parseDndId(over.id);
+
+      // Cancel any in-flight refetches to prevent them from overwriting optimistic updates
+      queryClient.cancelQueries({ queryKey: ['board', board.id] });
 
       // Handle column reordering
       if (activeType === 'column') {
@@ -248,6 +255,10 @@ export default function BoardView({ board }: BoardViewProps) {
         const activeCard = findCard(activeId);
         if (!activeCard) return;
 
+        // Use the original columnId from drag start, not the cache
+        // (handleDragOver already changed columnId in cache for visual feedback)
+        const sourceColumnId = dragSourceColumnIdRef.current || activeCard.columnId;
+
         // Determine target column and position
         let targetColumnId: string;
         let targetPosition: number;
@@ -275,8 +286,9 @@ export default function BoardView({ board }: BoardViewProps) {
 
         // Check WIP limit
         const targetColumn = findColumn(targetColumnId);
-        if (targetColumnId !== activeCard.columnId) {
-          const targetColumnCards = cards.filter((c) => c.columnId === targetColumnId);
+        if (targetColumnId !== sourceColumnId) {
+          // Exclude the active card since handleDragOver already moved it in cache
+          const targetColumnCards = cards.filter((c) => c.columnId === targetColumnId && c.id !== activeId);
           if (targetColumn?.wipLimit && targetColumnCards.length >= targetColumn.wipLimit) {
             // Revert optimistic update
             queryClient.invalidateQueries({ queryKey: ['board', board.id] });
@@ -286,7 +298,7 @@ export default function BoardView({ board }: BoardViewProps) {
         }
 
         // Same column reordering
-        if (targetColumnId === activeCard.columnId) {
+        if (targetColumnId === sourceColumnId) {
           const columnCards = cards
             .filter((c) => c.columnId === targetColumnId)
             .sort((a, b) => a.position - b.position);
@@ -371,7 +383,7 @@ export default function BoardView({ board }: BoardViewProps) {
           emitCardMove({
             boardId: board.id,
             cardId: activeId,
-            sourceColumnId: activeCard.columnId,
+            sourceColumnId,
             targetColumnId,
             position: targetPosition,
           });

@@ -67,9 +67,13 @@ export class CardService {
   }
 
   async moveCard(cardId: string, columnId: string, position: number): Promise<Card> {
-    await this.findById(cardId); // verify exists
-    await this.cardRepository.update(cardId, { columnId, position });
-    return this.findById(cardId);
+    const before = await this.findById(cardId); // verify exists
+    console.log(`[moveCard] BEFORE: card=${cardId}, columnId=${before.columnId} → target columnId=${columnId}, position=${position}`);
+    const result = await this.cardRepository.update(cardId, { columnId, position });
+    console.log(`[moveCard] UPDATE result: affected=${result.affected}`);
+    const after = await this.findById(cardId);
+    console.log(`[moveCard] AFTER: card=${cardId}, columnId=${after.columnId}, position=${after.position}`);
+    return after;
   }
 
   async reorderCards(columnId: string, cardIds: string[]): Promise<Card[]> {

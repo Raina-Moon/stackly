@@ -104,7 +104,11 @@ export function useBoards() {
 export function useBoard(id: string) {
   return useQuery({
     queryKey: ['board', id],
-    queryFn: () => api.get<Board>(`/boards/${id}`),
+    queryFn: async () => {
+      const data = await api.get<Board>(`/boards/${id}`);
+      console.log('[useBoard] fetched cards:', data.cards?.map(c => `${c.id.slice(0,8)}→col:${c.columnId.slice(0,8)}`));
+      return data;
+    },
     enabled: !!id,
   });
 }

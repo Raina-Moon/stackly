@@ -67,10 +67,9 @@ export class CardService {
   }
 
   async moveCard(cardId: string, columnId: string, position: number): Promise<Card> {
-    const card = await this.findById(cardId);
-    card.columnId = columnId;
-    card.position = position;
-    return this.cardRepository.save(card);
+    await this.findById(cardId); // verify exists
+    await this.cardRepository.update(cardId, { columnId, position });
+    return this.findById(cardId);
   }
 
   async reorderCards(columnId: string, cardIds: string[]): Promise<Card[]> {

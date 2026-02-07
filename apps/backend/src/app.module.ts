@@ -29,21 +29,64 @@ import { FriendsModule } from './modules/friends/friends.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        const synchronize =
+          configService.get('DB_SYNC') === 'true' ||
+          configService.get('NODE_ENV') !== 'production';
+
+        if (databaseUrl) {
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            ssl:
+              configService.get('DB_SSL') === 'false'
+                ? false
+                : { rejectUnauthorized: false },
+            autoLoadEntities: true,
+            synchronize,
+            entities: [
+              User,
+              Board,
+              Column,
+              Card,
+              Schedule,
+              RecurringSchedule,
+              BoardMember,
+              RefreshToken,
+              Friend,
+            ],
+            logging: configService.get('NODE_ENV') === 'development',
+          };
+        }
+
+        return {
           type: 'postgres',
           host: configService.get('DB_HOST'),
           port: configService.get<number>('DB_PORT', 5432),
           username: configService.get('DB_USERNAME'),
           password: configService.get('DB_PASSWORD'),
           database: configService.get('DB_NAME'),
-          ssl: configService.get('DB_SSL') === 'true'
-            ? { rejectUnauthorized: false }
-            : false,
+          ssl:
+            configService.get('DB_SSL') === 'true'
+              ? { rejectUnauthorized: false }
+              : false,
           autoLoadEntities: true,
-          synchronize: configService.get('NODE_ENV') !== 'production',
-          entities: [User, Board, Column, Card, Schedule, RecurringSchedule, BoardMember, RefreshToken, Friend],
+          synchronize,
+          entities: [
+            User,
+            Board,
+            Column,
+            Card,
+            Schedule,
+            RecurringSchedule,
+            BoardMember,
+            RefreshToken,
+            Friend,
+          ],
           logging: configService.get('NODE_ENV') === 'development',
-      }),
+        };
+      },
     }),
     AuthModule,
     KanbanModule,

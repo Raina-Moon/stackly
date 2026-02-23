@@ -31,7 +31,7 @@ export default function BoardsGridView({
   favoriteIds = new Set(),
 }: BoardsGridViewProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {boards.map((board) => {
         const isOwner = board.ownerId === currentUserId;
         const isFavorite = favoriteIds.has(board.id);
@@ -44,10 +44,11 @@ export default function BoardsGridView({
               description={board.description}
               color={board.color}
               cardCount={board.cards?.length || 0}
+              reserveTopSpace
               onClick={() => onBoardClick(board.id)}
             />
             {/* Actions overlay */}
-            <div className="absolute top-4 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-3 right-2 z-20 flex max-w-[calc(100%-0.75rem)] flex-wrap justify-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
               {/* Favorite button - always visible */}
               <button
                 onClick={(e) => {
@@ -104,8 +105,10 @@ export default function BoardsGridView({
                       e.stopPropagation();
                       onArchiveClick(board.id, !board.isArchived);
                     }}
-                    className="p-1.5 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
-                    title={board.isArchived ? '보관 해제' : '보관'}
+                    className={`p-1.5 bg-white rounded-lg shadow-sm transition-colors ${
+                      board.isArchived ? 'hover:bg-green-50' : 'hover:bg-amber-50'
+                    }`}
+                    title={board.isArchived ? '보관 해제 (목록에 다시 표시)' : '보관 (기본 목록에서 숨김)'}
                   >
                     {board.isArchived ? (
                       <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +138,7 @@ export default function BoardsGridView({
               )}
             </div>
             {/* Badges */}
-            <div className="absolute top-4 left-4 flex gap-1">
+            <div className="absolute top-4 left-4 z-10 flex max-w-[55%] flex-wrap gap-1">
               {isFavorite && (
                 <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full">
                   <svg className="w-3 h-3 inline" fill="currentColor" viewBox="0 0 24 24">

@@ -40,7 +40,7 @@ export default function FriendsPage() {
   const { data: friends } = useFriends();
   const { data: collaborators } = useCollaborators();
   const { data: incomingRequests } = useIncomingRequests();
-  const { data: boards } = useBoards();
+  const { data: boards } = useBoards(isAuthenticated && !authLoading);
 
   // Mutations
   const sendFriendRequest = useSendFriendRequest();

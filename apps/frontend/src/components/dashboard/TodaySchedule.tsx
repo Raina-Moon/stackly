@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ScheduleItem {
   id: string;
@@ -16,9 +17,12 @@ const demoSchedules: ScheduleItem[] = [
 ];
 
 const typeStyles = {
-  event: 'bg-blue-100 text-blue-600 border-blue-200',
-  deadline: 'bg-red-100 text-red-600 border-red-200',
-  reminder: 'bg-yellow-100 text-yellow-600 border-yellow-200',
+  event:
+    'bg-blue-100 text-blue-600 border-blue-200 shadow-[0_4px_10px_rgba(73,136,196,0.10)]',
+  deadline:
+    'bg-red-100 text-red-600 border-red-200 shadow-[0_4px_10px_rgba(239,68,68,0.08)]',
+  reminder:
+    'bg-yellow-100 text-yellow-600 border-yellow-200 shadow-[0_4px_10px_rgba(234,179,8,0.10)]',
 };
 
 const typeIcons = {
@@ -46,7 +50,9 @@ interface TodayScheduleProps {
 export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
   const t = useTranslations('schedule');
   const locale = useLocale();
+  const { isAuthenticated } = useAuth();
   const today = new Date();
+  const schedules = isAuthenticated ? [] : demoSchedules;
   const formattedDate = today.toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', {
     month: 'long',
     day: 'numeric',
@@ -65,7 +71,7 @@ export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
         </button>
       </div>
 
-      {demoSchedules.length === 0 ? (
+      {schedules.length === 0 ? (
         <div className="py-8 text-center text-gray-500">
           <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -74,17 +80,22 @@ export default function TodaySchedule({ onItemClick }: TodayScheduleProps) {
         </div>
       ) : (
         <ul className="space-y-3">
-          {demoSchedules.map((schedule) => (
+          {schedules.map((schedule) => (
             <li key={schedule.id}>
               <button
                 onClick={() => onItemClick?.(schedule.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors hover:bg-gray-50 ${typeStyles[schedule.type]}`}
+                className={`group relative w-full overflow-hidden rounded-xl border p-3 transition-all duration-150 ease-out hover:-translate-y-px active:translate-y-0 ${typeStyles[schedule.type]}`}
               >
-                {typeIcons[schedule.type]}
-                <span className="flex-1 text-left font-medium">
+                <span className="pointer-events-none absolute inset-x-3 top-1 h-1/3 rounded-full bg-white/25 blur-sm" />
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-black/[0.02]" />
+
+                <span className="relative z-10">
+                  {typeIcons[schedule.type]}
+                </span>
+                <span className="relative z-10 flex-1 text-left font-medium">
                   {t(schedule.titleKey)}
                 </span>
-                <span className="text-sm opacity-75">{schedule.time}</span>
+                <span className="relative z-10 text-sm opacity-75">{schedule.time}</span>
               </button>
             </li>
           ))}

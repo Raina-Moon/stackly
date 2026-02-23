@@ -1,4 +1,4 @@
-import { getAccessToken, refreshTokens, isTokenExpiring, clearAuth } from './auth';
+import { getAccessToken, getAuth, refreshTokens, isTokenExpiring, clearAuth } from './auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -40,6 +40,7 @@ class ApiClient {
 
   async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     const { requireAuth = true, ...fetchOptions } = options;
+    const hadAuthSession = requireAuth && !!getAuth();
     const headers = await this.getHeaders(requireAuth);
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -60,7 +61,9 @@ class ApiClient {
         return retryResponse.json();
       } else {
         clearAuth();
-        if (typeof window !== 'undefined') {
+        // Only force redirect when the user actually had an auth session.
+        // Guests may trigger protected requests from pages that intentionally show a login modal.
+        if (hadAuthSession && typeof window !== 'undefined') {
           window.location.href = '/login';
         }
         throw new Error('인증이 만료되었습니다');

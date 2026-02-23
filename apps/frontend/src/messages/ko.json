@@ -12,8 +12,8 @@
     "logout": "로그아웃",
     "logoutSuccess": "로그아웃 되었습니다.",
     "loggingOut": "로그아웃 중...",
-    "language": "언어",
-    "languageEnglish": "영어",
+    "language": "language",
+    "languageEnglish": "english",
     "languageKorean": "한국어"
   },
   "header": {
@@ -25,6 +25,10 @@
     "welcomeUser": "안녕하세요, {name}님!",
     "subtitleAuthed": "오늘도 생산적인 하루 되세요",
     "subtitleGuest": "로그인하여 보드를 관리하세요",
+    "guestCtaBadge": "시작하기",
+    "guestCtaTitle": "당신의 보드룸을 만들어보세요",
+    "guestCtaDescription": "프로젝트, 일정, 협업 흐름을 한 곳에서 정리하세요. 보드룸 만들기를 누르면 로그인 후 바로 시작할 수 있습니다.",
+    "guestCtaButton": "보드룸 만들기",
     "myBoards": "내 보드",
     "viewAll": "전체 보기",
     "loginToCreate": "로그인하면 보드를 만들고 관리할 수 있습니다"

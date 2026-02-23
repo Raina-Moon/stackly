@@ -31,8 +31,8 @@ function getInviteUrl(inviteCode: string): string {
 export default function BoardsPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { data: boards, isLoading: boardsLoading } = useBoards();
-  const { data: favoritesData } = useGetFavorites();
+  const { data: boards, isLoading: boardsLoading } = useBoards(isAuthenticated && !authLoading);
+  const { data: favoritesData } = useGetFavorites(isAuthenticated && !authLoading);
   const deleteBoard = useDeleteBoard();
   const updateBoard = useUpdateBoard();
   const favoriteBoard = useFavoriteBoard();
@@ -61,6 +61,9 @@ export default function BoardsPage() {
 
     // Apply filter
     switch (filter) {
+      case 'all':
+        // Show truly all boards, including archived ones.
+        break;
       case 'owned':
         result = result.filter((board) => board.ownerId === user?.id);
         break;
@@ -77,7 +80,7 @@ export default function BoardsPage() {
         result = result.filter((board) => favoriteIds.has(board.id));
         break;
       default:
-        result = result.filter((board) => !board.isArchived);
+        break;
     }
 
     // Apply search
@@ -151,7 +154,12 @@ export default function BoardsPage() {
         id: boardId,
         data: { isArchived: archive },
       });
-      showToast(archive ? '보드가 보관되었습니다' : '보드가 보관 해제되었습니다', 'success');
+      showToast(
+        archive
+          ? '보드가 보관되었습니다. "보관됨" 필터에서 확인할 수 있습니다.'
+          : '보드가 보관 해제되었습니다. 기본 목록에 다시 표시됩니다.',
+        'success'
+      );
     } catch (error: any) {
       showToast(error.message || '보드 상태 변경에 실패했습니다', 'error');
     }

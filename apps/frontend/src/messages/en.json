@@ -14,7 +14,7 @@
     "loggingOut": "Logging out...",
     "language": "Language",
     "languageEnglish": "English",
-    "languageKorean": "Korean"
+    "languageKorean": "한국어"
   },
   "header": {
     "searchPlaceholder": "Search boards, cards...",
@@ -25,6 +25,10 @@
     "welcomeUser": "Hi, {name}!",
     "subtitleAuthed": "Have a productive day today",
     "subtitleGuest": "Log in to manage your boards",
+    "guestCtaBadge": "Get started",
+    "guestCtaTitle": "Create your boardroom",
+    "guestCtaDescription": "Organize projects, schedules, and collaboration in one place. Click create boardroom and log in to start right away.",
+    "guestCtaButton": "Create boardroom",
     "myBoards": "My boards",
     "viewAll": "View all",
     "loginToCreate": "Log in to create and manage boards"

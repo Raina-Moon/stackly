@@ -93,10 +93,11 @@ export interface BoardInviteInfo {
 }
 
 // Fetch all boards for the current user
-export function useBoards() {
+export function useBoards(enabled = true) {
   return useQuery({
     queryKey: ['boards'],
     queryFn: () => api.get<Board[]>('/boards'),
+    enabled,
   });
 }
 
@@ -223,9 +224,10 @@ export function useFavoriteBoard() {
 }
 
 // Get favorite board IDs
-export function useGetFavorites() {
+export function useGetFavorites(enabled = true) {
   return useQuery({
     queryKey: ['board-favorites'],
     queryFn: () => api.get<{ favoriteIds: string[] }>('/boards/user/favorites'),
+    enabled,
   });
 }

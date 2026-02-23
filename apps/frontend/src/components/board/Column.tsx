@@ -33,12 +33,25 @@ export default function Column({
 }: ColumnProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const normalizedWipLimit =
+    column.wipLimit !== undefined && column.wipLimit !== null
+      ? Number(column.wipLimit)
+      : 0;
+  const hasWipLimit = Number.isFinite(normalizedWipLimit) && normalizedWipLimit > 0;
 
+  // Defensive de-duplication: realtime/optimistic updates may temporarily leave
+  // duplicate card IDs in cache, which breaks header counts and DnD rendering.
+  const seenCardIds = new Set<string>();
   const columnCards = cards
-    .filter((card) => card.columnId === column.id)
+    .filter((card) => {
+      if (card.columnId !== column.id) return false;
+      if (seenCardIds.has(card.id)) return false;
+      seenCardIds.add(card.id);
+      return true;
+    })
     .sort((a, b) => a.position - b.position);
 
-  const isAtWipLimit = column.wipLimit && columnCards.length >= column.wipLimit;
+  const isAtWipLimit = hasWipLimit && columnCards.length >= normalizedWipLimit;
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -88,7 +101,7 @@ export default function Column({
           <h3 className="font-semibold text-gray-900 text-sm">{column.name}</h3>
           <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded-full">
             {columnCards.length}
-            {column.wipLimit && `/${column.wipLimit}`}
+            {hasWipLimit && `/${normalizedWipLimit}`}
           </span>
         </div>
 

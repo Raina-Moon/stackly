@@ -201,7 +201,7 @@ export class BoardService {
   async findUserBoards(userId: string): Promise<Board[]> {
     const memberships = await this.boardMemberRepository.find({
       where: { userId },
-      relations: ['board', 'board.columns', 'board.owner'],
+      relations: ['board', 'board.columns', 'board.cards', 'board.owner'],
     });
 
     return memberships

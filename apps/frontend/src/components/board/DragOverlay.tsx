@@ -39,6 +39,12 @@ function ColumnOverlay({
   column: ColumnType;
   cards: CardType[];
 }) {
+  const normalizedWipLimit =
+    column.wipLimit !== undefined && column.wipLimit !== null
+      ? Number(column.wipLimit)
+      : 0;
+  const hasWipLimit = Number.isFinite(normalizedWipLimit) && normalizedWipLimit > 0;
+
   const columnCards = cards
     .filter((card) => card.columnId === column.id)
     .sort((a, b) => a.position - b.position);
@@ -56,7 +62,7 @@ function ColumnOverlay({
           <h3 className="font-semibold text-gray-900 text-sm">{column.name}</h3>
           <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded-full">
             {columnCards.length}
-            {column.wipLimit && `/${column.wipLimit}`}
+            {hasWipLimit && `/${normalizedWipLimit}`}
           </span>
         </div>
       </div>

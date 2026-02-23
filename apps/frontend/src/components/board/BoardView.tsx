@@ -176,7 +176,8 @@ export default function BoardView({ board }: BoardViewProps) {
         const targetColumn = findColumn(targetColumnId);
         const targetColumnCards = cards.filter((c) => c.columnId === targetColumnId);
 
-        if (targetColumn?.wipLimit && targetColumnCards.length >= targetColumn.wipLimit) {
+        const targetWipLimit = Number(targetColumn?.wipLimit ?? 0);
+        if (targetWipLimit > 0 && targetColumnCards.length >= targetWipLimit) {
           // WIP limit reached, don't allow drop
           return;
         }
@@ -289,7 +290,8 @@ export default function BoardView({ board }: BoardViewProps) {
         if (targetColumnId !== sourceColumnId) {
           // Exclude the active card since handleDragOver already moved it in cache
           const targetColumnCards = cards.filter((c) => c.columnId === targetColumnId && c.id !== activeId);
-          if (targetColumn?.wipLimit && targetColumnCards.length >= targetColumn.wipLimit) {
+          const targetWipLimit = Number(targetColumn?.wipLimit ?? 0);
+          if (targetWipLimit > 0 && targetColumnCards.length >= targetWipLimit) {
             // Revert optimistic update
             queryClient.invalidateQueries({ queryKey: ['board', board.id] });
             alert('WIP 제한에 도달하여 카드를 이동할 수 없습니다.');

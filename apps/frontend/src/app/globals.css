@@ -6,6 +6,16 @@
   --background: #ffffff;
   --foreground: #171717;
 
+  /* Brand palette (main -> sub)
+     https://colorhunt.co/palette/0f28541c4d8d4988c4bde8f5 */
+  --brand-main: #0f2854;
+  --brand-sub-1: #1c4d8d;
+  --brand-sub-2: #4988c4;
+  --brand-sub-3: #bde8f5;
+  --brand-tint-50: #edf8fc;
+  --brand-tint-100: #d8f0f8;
+  --brand-tint-200: #bde8f5;
+
   /* Gray colors */
   --gray-100: #f3f4f6;
   --gray-200: #e5e7eb;
@@ -46,3 +56,82 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+input,
+textarea,
+select {
+  color: var(--gray-900);
+}
+
+/* Global brand remap for existing Tailwind blue utilities */
+.bg-blue-50 { background-color: var(--brand-tint-50) !important; }
+.bg-blue-100 { background-color: var(--brand-tint-100) !important; }
+.bg-blue-600 { background-color: var(--brand-sub-1) !important; }
+.bg-blue-700 { background-color: var(--brand-main) !important; }
+
+.text-blue-500 { color: var(--brand-sub-2) !important; }
+.text-blue-600 { color: var(--brand-sub-1) !important; }
+.text-blue-700 { color: var(--brand-main) !important; }
+.text-blue-900 { color: var(--brand-main) !important; }
+
+.border-blue-100 { border-color: var(--brand-tint-100) !important; }
+.border-blue-200 { border-color: var(--brand-sub-3) !important; }
+.border-blue-400 { border-color: var(--brand-sub-2) !important; }
+.border-blue-600 { border-color: var(--brand-sub-1) !important; }
+
+.ring-blue-500 { --tw-ring-color: var(--brand-sub-2) !important; }
+.ring-blue-600 { --tw-ring-color: var(--brand-sub-1) !important; }
+
+.from-blue-50 {
+  --tw-gradient-from: var(--brand-tint-50) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(237 248 252 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-blue-500 {
+  --tw-gradient-from: var(--brand-sub-2) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(73 136 196 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-blue-600 {
+  --tw-gradient-from: var(--brand-sub-1) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(28 77 141 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.to-blue-700 {
+  --tw-gradient-to: var(--brand-main) var(--tw-gradient-to-position);
+}
+.to-cyan-50 {
+  --tw-gradient-to: var(--brand-sub-3) var(--tw-gradient-to-position);
+}
+.to-indigo-100 {
+  --tw-gradient-to: var(--brand-sub-3) var(--tw-gradient-to-position);
+}
+.to-purple-500 {
+  --tw-gradient-to: var(--brand-main) var(--tw-gradient-to-position);
+}
+
+.hover\:bg-blue-50:hover { background-color: var(--brand-tint-50) !important; }
+.hover\:bg-blue-600:hover { background-color: var(--brand-sub-1) !important; }
+.hover\:bg-blue-700:hover { background-color: var(--brand-main) !important; }
+.hover\:text-blue-500:hover { color: var(--brand-sub-2) !important; }
+.hover\:text-blue-600:hover { color: var(--brand-sub-1) !important; }
+.hover\:text-blue-700:hover { color: var(--brand-main) !important; }
+.hover\:text-blue-900:hover { color: var(--brand-main) !important; }
+.hover\:border-blue-400:hover { border-color: var(--brand-sub-2) !important; }
+.hover\:border-blue-600:hover { border-color: var(--brand-sub-1) !important; }
+
+.group:hover .group-hover\:bg-blue-100 { background-color: var(--brand-tint-100) !important; }
+.group:hover .group-hover\:text-blue-500 { color: var(--brand-sub-2) !important; }
+.group:hover .group-hover\:text-blue-600 { color: var(--brand-sub-1) !important; }
+
+.focus\:ring-blue-500:focus { --tw-ring-color: var(--brand-sub-2) !important; }
+.focus\:ring-blue-600:focus { --tw-ring-color: var(--brand-sub-1) !important; }
+.focus\:border-blue-500:focus { border-color: var(--brand-sub-2) !important; }
+.focus\:border-blue-600:focus { border-color: var(--brand-sub-1) !important; }
+
+/* Button hover boundary: reinforce brand edge without rewriting every component */
+@media (hover: hover) {
+  button:not(:disabled):hover {
+    outline: 1px solid color-mix(in srgb, var(--brand-main) 28%, transparent);
+    outline-offset: 0;
+  }
+}

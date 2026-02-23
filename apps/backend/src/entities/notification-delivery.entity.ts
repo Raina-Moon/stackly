@@ -5,8 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
-import { NotificationChannel } from './notification-event.entity';
+import { NotificationChannel, NotificationEvent } from './notification-event.entity';
 
 export enum NotificationDeliveryStatus {
   PENDING = 'pending',
@@ -52,8 +54,15 @@ export class NotificationDelivery {
   @Column({ type: 'timestamp', nullable: true })
   sentAt: Date | null;
 
+  @Column({ type: 'timestamp', nullable: true })
+  readAt: Date | null;
+
   @Column({ type: 'text', nullable: true })
   errorMessage: string | null;
+
+  @ManyToOne(() => NotificationEvent, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'eventId' })
+  event: NotificationEvent;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

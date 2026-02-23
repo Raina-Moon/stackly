@@ -18,7 +18,8 @@
   },
   "header": {
     "searchPlaceholder": "Search boards, cards...",
-    "newBoard": "New board"
+    "newBoard": "New board",
+    "notifications": "Notification history"
   },
   "home": {
     "welcomeGuest": "Welcome!",
@@ -250,6 +251,14 @@
         "save": "Save settings",
         "saving": "Saving..."
       },
+      "test": {
+        "title": "Send a test notification",
+        "description": "Immediately send a test reminder using your saved completion follow-up settings (channels and delay).",
+        "actions": {
+          "send": "Send test notification",
+          "sending": "Sending..."
+        }
+      },
       "overdue": {
         "title": "Overdue completion follow-up reminder",
         "description": "Notify assignees when a schedule is still not completed after a delay from its end time.",
@@ -309,9 +318,45 @@
         "permissionDismissed": "Browser notification permission request was dismissed.",
         "permissionFailed": "Failed to request browser notification permission.",
         "browserSynced": "Browser push subscription synced to the server.",
-        "browserSyncFailed": "Failed to sync browser push subscription."
+        "browserSyncFailed": "Failed to sync browser push subscription.",
+        "testQueued": "Test notification was queued and processed.",
+        "testQueuedWithChannels": "Test notification was processed for {count} channels.",
+        "testFailed": "Failed to send a test notification."
       },
       "footer": "Next: apply saved user preferences in the reminder workers, add Slack OAuth integration, and a test notification button."
+    }
+  },
+  "notificationsPage": {
+    "title": "Notification history",
+    "subtitle": "Review delivery history across email, browser push, and other channels.",
+    "loginRequiredTitle": "Log in to view notifications",
+    "loginRequiredDescription": "Notification history is stored per signed-in user account.",
+    "loading": "Loading notifications...",
+    "loadFailed": "Failed to load notification history.",
+    "empty": "No notification history yet.",
+    "fallbackTitle": "Notification",
+    "fallbackBody": "No message content available.",
+    "createdAt": "Created",
+    "sentAt": "Sent",
+    "error": "Error",
+    "new": "New notification",
+    "unread": "{count} unread",
+    "actions": {
+      "markAllRead": "Mark all read",
+      "markingAll": "Marking...",
+      "markRead": "Mark read"
+    },
+    "channels": {
+      "email": "Email",
+      "slack": "Slack",
+      "web_push": "Browser push"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "sent": "Sent",
+      "failed": "Failed",
+      "skipped": "Skipped"
     }
   }
 }

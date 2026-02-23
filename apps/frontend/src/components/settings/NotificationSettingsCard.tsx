@@ -24,6 +24,16 @@ interface NotificationPreferencesResponse {
   preferences: NotificationPrefsDraft;
 }
 
+interface NotificationTestResponse {
+  success: boolean;
+  message: string;
+  event?: {
+    id: string;
+    status: string;
+    channels: string[];
+  };
+}
+
 const STORAGE_KEY = 'stackly_notification_prefs_draft_v1';
 
 function Toggle({
@@ -72,6 +82,7 @@ export default function NotificationSettingsCard() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoadingPrefs, setIsLoadingPrefs] = useState(false);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const [isSyncingBrowser, setIsSyncingBrowser] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
@@ -205,6 +216,25 @@ export default function NotificationSettingsCard() {
     }
   };
 
+  const sendTestNotification = async () => {
+    setIsSendingTest(true);
+    try {
+      const res = await api.post<NotificationTestResponse>('/notifications/test/schedule-followup');
+      const channelCount = Array.isArray(res?.event?.channels) ? res.event!.channels.length : 0;
+      showToast(
+        channelCount > 0
+          ? t('toast.testQueuedWithChannels', { count: channelCount })
+          : t('toast.testQueued'),
+        'success',
+      );
+      await refreshBrowserStatus();
+    } catch (error: any) {
+      showToast(error?.message || t('toast.testFailed'), 'error');
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
   const syncBrowserSubscription = async () => {
     setIsSyncingBrowser(true);
     try {
@@ -249,6 +279,23 @@ export default function NotificationSettingsCard() {
         >
           {isSavingPrefs ? t('actions.saving') : t('actions.save')}
         </button>
+      </div>
+
+      <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-emerald-900">{t('test.title')}</p>
+            <p className="mt-1 text-sm text-emerald-700">{t('test.description')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={sendTestNotification}
+            disabled={isSendingTest}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+          >
+            {isSendingTest ? t('test.actions.sending') : t('test.actions.send')}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">

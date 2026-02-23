@@ -18,7 +18,8 @@
   },
   "header": {
     "searchPlaceholder": "보드, 카드 검색...",
-    "newBoard": "새 보드"
+    "newBoard": "새 보드",
+    "notifications": "알림 히스토리"
   },
   "home": {
     "welcomeGuest": "환영합니다!",
@@ -250,6 +251,14 @@
         "save": "설정 저장",
         "saving": "저장 중..."
       },
+      "test": {
+        "title": "테스트 알림 보내기",
+        "description": "현재 저장된 완료 확인 리마인더 설정(채널/지연 시간)을 기준으로 테스트 알림을 즉시 전송합니다.",
+        "actions": {
+          "send": "테스트 알림 보내기",
+          "sending": "전송 중..."
+        }
+      },
       "overdue": {
         "title": "지연 완료 확인 리마인더",
         "description": "스케줄 종료 후 일정 시간이 지났는데 완료 상태가 아니면 담당자에게 알림을 보냅니다.",
@@ -309,9 +318,45 @@
         "permissionDismissed": "브라우저 알림 권한 요청이 닫혔습니다.",
         "permissionFailed": "브라우저 알림 권한 요청에 실패했습니다.",
         "browserSynced": "브라우저 알림 구독이 서버에 동기화되었습니다.",
-        "browserSyncFailed": "브라우저 알림 구독 동기화에 실패했습니다."
+        "browserSyncFailed": "브라우저 알림 구독 동기화에 실패했습니다.",
+        "testQueued": "테스트 알림이 큐에 등록되어 처리되었습니다.",
+        "testQueuedWithChannels": "테스트 알림이 {count}개 채널로 전송 처리되었습니다.",
+        "testFailed": "테스트 알림 전송에 실패했습니다."
       },
       "footer": "다음 단계: 저장된 사용자 설정을 실제 리마인더 워커 조건/채널 선택에 반영하고, Slack OAuth 및 테스트 알림 보내기 버튼을 추가"
+    }
+  },
+  "notificationsPage": {
+    "title": "알림 히스토리",
+    "subtitle": "이메일, 브라우저 푸시, 기타 채널의 알림 전달 이력을 확인합니다.",
+    "loginRequiredTitle": "알림을 보려면 로그인하세요",
+    "loginRequiredDescription": "알림 히스토리는 로그인한 사용자 계정별로 관리됩니다.",
+    "loading": "알림 불러오는 중...",
+    "loadFailed": "알림 목록을 불러오지 못했습니다.",
+    "empty": "아직 알림 이력이 없습니다.",
+    "fallbackTitle": "알림",
+    "fallbackBody": "알림 내용이 없습니다.",
+    "createdAt": "생성",
+    "sentAt": "전송",
+    "error": "오류",
+    "new": "새 알림",
+    "unread": "읽지 않음 {count}개",
+    "actions": {
+      "markAllRead": "모두 읽음 처리",
+      "markingAll": "처리 중...",
+      "markRead": "읽음 처리"
+    },
+    "channels": {
+      "email": "이메일",
+      "slack": "Slack",
+      "web_push": "브라우저 알림"
+    },
+    "status": {
+      "pending": "대기",
+      "processing": "처리 중",
+      "sent": "전송됨",
+      "failed": "실패",
+      "skipped": "건너뜀"
     }
   }
 }

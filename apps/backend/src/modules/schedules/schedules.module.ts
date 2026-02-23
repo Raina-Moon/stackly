@@ -15,6 +15,8 @@ import { WebPushSubscriptionService } from './services/web-push-subscription.ser
 import { ScheduleController } from './controllers/schedule.controller';
 import { RecurringScheduleController } from './controllers/recurring-schedule.controller';
 import { WebPushSubscriptionController } from './controllers/web-push-subscription.controller';
+import { NotificationTestController } from './controllers/notification-test.controller';
+import { NotificationHistoryController } from './controllers/notification-history.controller';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
 
@@ -35,6 +37,8 @@ import { AuthModule } from '../auth/auth.module';
     ScheduleController,
     RecurringScheduleController,
     WebPushSubscriptionController,
+    NotificationTestController,
+    NotificationHistoryController,
   ],
   providers: [
     ScheduleService,

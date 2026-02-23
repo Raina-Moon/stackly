@@ -70,6 +70,9 @@ export class Card {
   @Column({ type: 'uuid', nullable: true })
   assigneeId: string;
 
+  @Column({ type: 'uuid', array: true, nullable: true, default: () => 'ARRAY[]::uuid[]' })
+  assigneeIds: string[];
+
   @ManyToOne(() => Board, (board) => board.cards, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'boardId' })
   board: Board;

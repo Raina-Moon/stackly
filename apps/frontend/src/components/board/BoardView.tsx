@@ -530,6 +530,8 @@ export default function BoardView({ board }: BoardViewProps) {
                         <Column
                           column={column}
                           cards={cards}
+                          members={board.members || []}
+                          owner={board.owner}
                           onCardClick={handleCardClick}
                           onAddCard={() => handleAddCard(column.id)}
                           onEditColumn={() => handleEditColumn(column)}

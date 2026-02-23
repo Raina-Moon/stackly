@@ -71,7 +71,7 @@ export default function CardDetailModal({
   const [estimatedHours, setEstimatedHours] = useState<string>(
     card.estimatedHours?.toString() || ''
   );
-  const [assigneeId, setAssigneeId] = useState(card.assigneeId || '');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(card.assigneeIds || (card.assigneeId ? [card.assigneeId] : []));
   const [newScheduleDate, setNewScheduleDate] = useState('');
   const [newScheduleStart, setNewScheduleStart] = useState('');
   const [newScheduleEnd, setNewScheduleEnd] = useState('');
@@ -99,7 +99,14 @@ export default function CardDetailModal({
       }))),
   ], [board]);
 
-  const assignedUser = assigneeOptions.find((option) => option.id === (card.assigneeId || assigneeId));
+  const selectedAssigneeIds = assigneeIds;
+  const assignedUsers = assigneeOptions.filter((option) => selectedAssigneeIds.includes(option.id));
+
+  const toggleAssignee = (userId: string) => {
+    setAssigneeIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
 
   const buildDateTimeIso = (date: string, time: string) => {
     if (!date || !time) return null;
@@ -154,7 +161,7 @@ export default function CardDetailModal({
       tags: tags.length > 0 ? tags : [],
       dueDate: dueDate || undefined,
       estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
-      assigneeId: assigneeId || undefined,
+      assigneeIds: assigneeIds.length > 0 ? assigneeIds : [],
     };
 
     try {
@@ -225,22 +232,26 @@ export default function CardDetailModal({
       return;
     }
 
-    const targetUserId = assigneeId || card.assigneeId || user?.id;
-    if (!targetUserId) {
+    const targetUserIds = assigneeIds.length > 0 ? assigneeIds : (user?.id ? [user.id] : []);
+    if (targetUserIds.length === 0) {
       showToast('담당자를 지정하거나 로그인 상태를 확인해주세요', 'error');
       return;
     }
 
     try {
-      await createSchedule.mutateAsync({
-        title: (newScheduleTitle || card.title).trim(),
-        startTime: startIso,
-        endTime: endIso,
-        userId: targetUserId,
-        cardId: card.id,
-        type: 'event',
-        color: card.color,
-      });
+      await Promise.all(
+        targetUserIds.map((targetUserId) =>
+          createSchedule.mutateAsync({
+            title: (newScheduleTitle || card.title).trim(),
+            startTime: startIso,
+            endTime: endIso,
+            userId: targetUserId,
+            cardId: card.id,
+            type: 'event',
+            color: card.color,
+          })
+        )
+      );
       showToast('카드 작업 스케줄이 생성되었습니다', 'success');
       setNewScheduleTitle('');
       setNewScheduleDate('');
@@ -310,7 +321,7 @@ export default function CardDetailModal({
     setTags(card.tags || []);
     setDueDate(card.dueDate ? card.dueDate.split('T')[0] : '');
     setEstimatedHours(card.estimatedHours?.toString() || '');
-    setAssigneeId(card.assigneeId || '');
+    setAssigneeIds(card.assigneeIds || (card.assigneeId ? [card.assigneeId] : []));
     setIsEditing(false);
   };
 
@@ -571,22 +582,37 @@ export default function CardDetailModal({
 
                 {/* Assignee */}
                 <div>
-                  <label htmlFor="edit-assignee" className="block text-sm font-medium text-gray-700 mb-1">
-                    담당자
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    담당자 (복수 선택 가능)
                   </label>
-                  <select
-                    id="edit-assignee"
-                    value={assigneeId}
-                    onChange={(e) => setAssigneeId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  >
-                    <option value="">미지정</option>
-                    {assigneeOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.nickname} ({option.roleLabel})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="rounded-lg border border-gray-300 p-3 space-y-2 max-h-44 overflow-y-auto">
+                    {assigneeOptions.length === 0 ? (
+                      <p className="text-sm text-gray-500">초대된 멤버가 없습니다</p>
+                    ) : (
+                      assigneeOptions.map((option) => (
+                        <label key={option.id} className="flex items-center justify-between gap-3 cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-50">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{option.nickname}</p>
+                            <p className="text-xs text-gray-500 truncate">{option.email}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                              {option.roleLabel}
+                            </span>
+                            <input
+                              type="checkbox"
+                              checked={assigneeIds.includes(option.id)}
+                              onChange={() => toggleAssignee(option.id)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  {assigneeIds.length > 0 && (
+                    <p className="mt-1 text-xs text-gray-500">선택됨: {assigneeIds.length}명</p>
+                  )}
                 </div>
               </>
             ) : (
@@ -643,7 +669,9 @@ export default function CardDetailModal({
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-1">담당자</h4>
                     <span className="text-sm text-gray-600">
-                      {assignedUser ? `${assignedUser.nickname} (${assignedUser.roleLabel})` : '미지정'}
+                      {assignedUsers.length > 0
+                        ? assignedUsers.map((u) => u.nickname).join(', ')
+                        : '미지정'}
                     </span>
                   </div>
                 </div>
@@ -813,7 +841,9 @@ export default function CardDetailModal({
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-gray-600">
-                      대상 사용자: {assignedUser?.nickname || card.assignee?.nickname || user?.nickname || '없음'} (카드 담당자 우선)
+                      대상 사용자: {assignedUsers.length > 0
+                        ? `${assignedUsers.length}명 담당자`
+                        : user?.nickname || '없음'} (카드 담당자 우선)
                     </p>
                     <button
                       type="button"

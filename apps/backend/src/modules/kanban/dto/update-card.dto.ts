@@ -11,5 +11,6 @@ export class UpdateCardDto {
   dueDate?: Date;
   columnId?: string;
   assigneeId?: string;
+  assigneeIds?: string[];
   completedAt?: Date;
 }

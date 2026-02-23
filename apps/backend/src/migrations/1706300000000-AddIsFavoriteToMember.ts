@@ -5,7 +5,7 @@ export class AddIsFavoriteToMember1706300000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "board_members" ADD "isFavorite" boolean NOT NULL DEFAULT false`,
+      `ALTER TABLE "board_members" ADD COLUMN IF NOT EXISTS "isFavorite" boolean NOT NULL DEFAULT false`,
     );
   }
 

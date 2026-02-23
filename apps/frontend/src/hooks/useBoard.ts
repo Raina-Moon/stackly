@@ -51,6 +51,7 @@ export interface Card {
   boardId: string;
   columnId: string;
   assigneeId?: string;
+  assigneeIds?: string[];
   assignee?: {
     id: string;
     nickname: string;

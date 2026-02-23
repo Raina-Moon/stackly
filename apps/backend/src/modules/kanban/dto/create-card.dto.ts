@@ -12,4 +12,5 @@ export class CreateCardDto {
   boardId: string;
   columnId: string;
   assigneeId?: string;
+  assigneeIds?: string[];
 }

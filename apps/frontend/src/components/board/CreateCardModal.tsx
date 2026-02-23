@@ -57,7 +57,7 @@ export default function CreateCardModal({
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
   const [estimatedHours, setEstimatedHours] = useState<string>('');
-  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [createWorkBlock, setCreateWorkBlock] = useState(false);
   const [workDate, setWorkDate] = useState('');
   const [workStartTime, setWorkStartTime] = useState('');
@@ -80,6 +80,12 @@ export default function CreateCardModal({
         roleLabel: member.role,
       }))),
   ];
+
+  const toggleAssignee = (userId: string) => {
+    setAssigneeIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
 
   const buildDateTime = (date: string, time: string) => {
     if (!date || !time) return null;
@@ -125,7 +131,7 @@ export default function CreateCardModal({
           tags: tags.length > 0 ? tags : undefined,
           dueDate: dueDate || undefined,
           estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
-          assigneeId: assigneeId || undefined,
+          assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
           columnId,
         },
       });
@@ -135,15 +141,24 @@ export default function CreateCardModal({
         const end = buildDateTime(workDate, workEndTime);
 
         if (start && end && end > start) {
-          await createSchedule.mutateAsync({
-            title: (workTitle || title).trim() || '작업 시간 블록',
-            startTime: start.toISOString(),
-            endTime: end.toISOString(),
-            userId: assigneeId || user?.id || '',
-            cardId: newCard.id,
-            type: 'event',
-            color: color || board.color,
-          });
+          const targetUserIds = assigneeIds.length > 0 ? assigneeIds : (user?.id ? [user.id] : []);
+          if (targetUserIds.length === 0) {
+            showToast('작업 시간 블록 생성 대상 사용자를 찾을 수 없어 카드만 생성되었습니다', 'error');
+          } else {
+            await Promise.all(
+              targetUserIds.map((targetUserId) =>
+                createSchedule.mutateAsync({
+                  title: (workTitle || title).trim() || '작업 시간 블록',
+                  startTime: start.toISOString(),
+                  endTime: end.toISOString(),
+                  userId: targetUserId,
+                  cardId: newCard.id,
+                  type: 'event',
+                  color: color || board.color,
+                })
+              )
+            );
+          }
         } else {
           showToast('작업 시간 블록 시간 범위가 올바르지 않아 카드만 생성되었습니다', 'error');
         }
@@ -168,7 +183,7 @@ export default function CreateCardModal({
     setTags([]);
     setDueDate('');
     setEstimatedHours('');
-    setAssigneeId('');
+    setAssigneeIds([]);
     setCreateWorkBlock(false);
     setWorkDate('');
     setWorkStartTime('');
@@ -376,22 +391,37 @@ export default function CreateCardModal({
 
             {/* Assignee */}
             <div>
-              <label htmlFor="assignee" className="block text-sm font-medium text-gray-700 mb-1">
-                담당자
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                담당자 (복수 선택 가능)
               </label>
-              <select
-                id="assignee"
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              >
-                <option value="">미지정</option>
-                {assigneeOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.nickname} ({option.roleLabel})
-                  </option>
-                ))}
-              </select>
+              <div className="rounded-lg border border-gray-300 p-3 space-y-2 max-h-44 overflow-y-auto">
+                {assigneeOptions.length === 0 ? (
+                  <p className="text-sm text-gray-500">초대된 멤버가 없습니다</p>
+                ) : (
+                  assigneeOptions.map((option) => (
+                    <label key={option.id} className="flex items-center justify-between gap-3 cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-50">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{option.nickname}</p>
+                        <p className="text-xs text-gray-500 truncate">{option.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                          {option.roleLabel}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={assigneeIds.includes(option.id)}
+                          onChange={() => toggleAssignee(option.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+              {assigneeIds.length > 0 && (
+                <p className="mt-1 text-xs text-gray-500">선택됨: {assigneeIds.length}명</p>
+              )}
             </div>
 
             {/* Optional work schedule block */}
@@ -453,7 +483,7 @@ export default function CreateCardModal({
                     </div>
                   </div>
                   <p className="text-xs text-gray-600">
-                    담당자가 없으면 현재 사용자 기준으로 일정이 생성됩니다.
+                    담당자를 여러 명 선택하면 같은 시간 블록이 각 담당자 스케줄에 생성됩니다.
                   </p>
                 </div>
               )}

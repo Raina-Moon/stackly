@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CardService } from '../services/card.service';
 import { BoardService } from '../services/board.service';
@@ -26,6 +27,16 @@ export class CardController {
     private readonly columnService: ColumnService,
   ) {}
 
+  private normalizeAssignees(data: { assigneeId?: string; assigneeIds?: string[] }) {
+    const assigneeIds = Array.from(
+      new Set((data.assigneeIds || (data.assigneeId ? [data.assigneeId] : [])).filter(Boolean)),
+    );
+    return {
+      assigneeIds,
+      assigneeId: assigneeIds[0] || undefined,
+    };
+  }
+
   @Post()
   async create(@Body() createCardDto: CreateCardDto, @GetUser() user: AuthUser) {
     const column = await this.columnService.findById(createCardDto.columnId);
@@ -33,7 +44,17 @@ export class CardController {
     if (!member || !member.canEdit) {
       throw new ForbiddenException('카드 생성 권한이 없습니다.');
     }
-    return this.cardService.create({ ...createCardDto, boardId: column.boardId });
+    const assignees = this.normalizeAssignees(createCardDto);
+    const validAssignees = await this.boardService.areAllMembers(column.boardId, assignees.assigneeIds);
+    if (!validAssignees) {
+      throw new BadRequestException('담당자는 해당 보드에 초대된 멤버여야 합니다.');
+    }
+
+    return this.cardService.create({
+      ...createCardDto,
+      ...assignees,
+      boardId: column.boardId,
+    });
   }
 
   @Get('column/:columnId')
@@ -85,7 +106,17 @@ export class CardController {
     if (!member || !member.canEdit) {
       throw new ForbiddenException('카드 수정 권한이 없습니다.');
     }
-    return this.cardService.update(id, updateCardDto);
+    let normalizedAssignees = {};
+    if (updateCardDto.assigneeIds || Object.prototype.hasOwnProperty.call(updateCardDto, 'assigneeId')) {
+      const assignees = this.normalizeAssignees(updateCardDto);
+      const validAssignees = await this.boardService.areAllMembers(card.boardId, assignees.assigneeIds);
+      if (!validAssignees) {
+        throw new BadRequestException('담당자는 해당 보드에 초대된 멤버여야 합니다.');
+      }
+      normalizedAssignees = assignees;
+    }
+
+    return this.cardService.update(id, { ...updateCardDto, ...normalizedAssignees });
   }
 
   @Put(':id/move')

@@ -16,6 +16,7 @@ export interface CreateCardDto {
   dueDate?: string;
   columnId: string;
   assigneeId?: string;
+  assigneeIds?: string[];
 }
 
 export interface UpdateCardDto {
@@ -29,6 +30,7 @@ export interface UpdateCardDto {
   dueDate?: string;
   columnId?: string;
   assigneeId?: string;
+  assigneeIds?: string[];
   completedAt?: string;
 }
 

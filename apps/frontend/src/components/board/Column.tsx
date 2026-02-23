@@ -6,7 +6,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Column as ColumnType, Card as CardType } from '@/hooks/useBoard';
+import { BoardMember, Column as ColumnType, Card as CardType } from '@/hooks/useBoard';
 import { createDndId } from '@/utils/dnd';
 import Card from './Card';
 import SortableCard from './SortableCard';
@@ -15,6 +15,8 @@ import type { DragHandleProps } from './SortableColumn';
 interface ColumnProps {
   column: ColumnType;
   cards: CardType[];
+  members?: BoardMember[];
+  owner?: { id: string; nickname: string; email: string; avatar?: string };
   onCardClick?: (card: CardType) => void;
   onAddCard?: () => void;
   onEditColumn?: () => void;
@@ -25,6 +27,8 @@ interface ColumnProps {
 export default function Column({
   column,
   cards,
+  members,
+  owner,
   onCardClick,
   onAddCard,
   onEditColumn,
@@ -181,7 +185,12 @@ export default function Column({
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {columnCards.map((card) => (
             <SortableCard key={card.id} cardId={card.id}>
-              <Card card={card} onClick={() => onCardClick?.(card)} />
+              <Card
+                card={card}
+                members={members}
+                owner={owner}
+                onClick={() => onCardClick?.(card)}
+              />
             </SortableCard>
           ))}
         </SortableContext>

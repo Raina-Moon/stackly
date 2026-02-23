@@ -1,9 +1,12 @@
 'use client';
 
-import { Card as CardType } from '@/hooks/useBoard';
+import { BoardMember, Card as CardType } from '@/hooks/useBoard';
+import { getAvatarImageSrc } from '@/lib/avatar';
 
 interface CardProps {
   card: CardType;
+  members?: BoardMember[];
+  owner?: { id: string; nickname: string; email: string; avatar?: string };
   onClick?: () => void;
 }
 
@@ -21,8 +24,24 @@ const priorityLabels = {
   urgent: '긴급',
 };
 
-export default function Card({ card, onClick }: CardProps) {
+export default function Card({ card, members, owner, onClick }: CardProps) {
   const isOverdue = card.dueDate && new Date(card.dueDate) < new Date() && !card.completedAt;
+  const assignedIds = card.assigneeIds && card.assigneeIds.length > 0
+    ? card.assigneeIds
+    : (card.assigneeId ? [card.assigneeId] : []);
+
+  const memberUsers = (members || [])
+    .map((member) => member.user)
+    .filter(Boolean) as Array<{ id: string; nickname: string; email: string; avatar?: string }>;
+
+  const userMap = new Map(memberUsers.map((u) => [u.id, u]));
+  if (owner) {
+    userMap.set(owner.id, owner);
+  }
+
+  const assignees = assignedIds
+    .map((id) => userMap.get(id))
+    .filter(Boolean) as Array<{ id: string; nickname: string; email: string; avatar?: string }>;
 
   return (
     <div
@@ -63,6 +82,45 @@ export default function Card({ card, onClick }: CardProps) {
           {card.tags.length > 3 && (
             <span className="text-xs text-gray-400">+{card.tags.length - 3}</span>
           )}
+        </div>
+      )}
+
+      {/* Assignees */}
+      {assignees.length > 0 && (
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex -space-x-2">
+            {assignees.slice(0, 3).map((assignee) => {
+              const avatarSrc = getAvatarImageSrc(assignee.avatar, assignee.nickname);
+              return avatarSrc ? (
+                <img
+                  key={assignee.id}
+                  src={avatarSrc}
+                  alt={assignee.nickname}
+                  title={assignee.nickname}
+                  className="w-6 h-6 rounded-full object-cover border-2 border-white bg-white shadow-sm"
+                />
+              ) : (
+                <div
+                  key={assignee.id}
+                  title={assignee.nickname}
+                  className="w-6 h-6 rounded-full border-2 border-white bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-[10px] font-semibold flex items-center justify-center shadow-sm"
+                >
+                  {assignee.nickname.charAt(0).toUpperCase()}
+                </div>
+              );
+            })}
+            {assignees.length > 3 && (
+              <div
+                title={`외 ${assignees.length - 3}명`}
+                className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 text-gray-700 text-[10px] font-semibold flex items-center justify-center shadow-sm"
+              >
+                +{assignees.length - 3}
+              </div>
+            )}
+          </div>
+          <span className="text-[11px] text-gray-400">
+            담당 {assignees.length}명
+          </span>
         </div>
       )}
 

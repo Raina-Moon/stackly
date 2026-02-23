@@ -59,11 +59,16 @@ export class CardService {
   }
 
   async findByAssignee(assigneeId: string): Promise<Card[]> {
-    return this.cardRepository.find({
-      where: { assigneeId, deletedAt: IsNull() },
-      relations: ['column', 'board'],
-      order: { position: 'ASC' },
-    });
+    return this.cardRepository
+      .createQueryBuilder('card')
+      .leftJoinAndSelect('card.column', 'column')
+      .leftJoinAndSelect('card.board', 'board')
+      .where('card.deletedAt IS NULL')
+      .andWhere('(:assigneeId = card."assigneeId" OR :assigneeId = ANY(card."assigneeIds"))', {
+        assigneeId,
+      })
+      .orderBy('card.position', 'ASC')
+      .getMany();
   }
 
   async moveCard(cardId: string, columnId: string, position: number): Promise<Card> {

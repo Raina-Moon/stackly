@@ -198,6 +198,17 @@ export class BoardService {
     });
   }
 
+  async areAllMembers(boardId: string, userIds: string[]): Promise<boolean> {
+    const normalized = Array.from(new Set(userIds.filter(Boolean)));
+    if (normalized.length === 0) return true;
+
+    const count = await this.boardMemberRepository.count({
+      where: normalized.map((userId) => ({ boardId, userId })),
+    });
+
+    return count === normalized.length;
+  }
+
   async findUserBoards(userId: string): Promise<Board[]> {
     const memberships = await this.boardMemberRepository.find({
       where: { userId },

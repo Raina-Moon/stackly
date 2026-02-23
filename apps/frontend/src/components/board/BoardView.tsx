@@ -633,6 +633,7 @@ export default function BoardView({ board }: BoardViewProps) {
             setSelectedColumnIdForCard(null);
           }}
           boardId={board.id}
+          board={board}
           columnId={selectedColumnIdForCard}
           existingCardsCount={
             cards.filter((c) => c.columnId === selectedColumnIdForCard).length
@@ -650,6 +651,7 @@ export default function BoardView({ board }: BoardViewProps) {
           }}
           card={selectedCard}
           boardId={board.id}
+          board={board}
         />
       )}
 

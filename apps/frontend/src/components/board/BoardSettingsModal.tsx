@@ -6,6 +6,7 @@ import { Board, BoardMember, useUpdateBoard, useDeleteBoard, useRemoveBoardMembe
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { getAvatarImageSrc } from '@/lib/avatar';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface BoardSettingsModalProps {
@@ -62,6 +63,7 @@ export default function BoardSettingsModal({
   }, [board]);
 
   const isOwner = board.ownerId === user?.id;
+  const ownerAvatarSrc = getAvatarImageSrc(board.owner?.avatar, board.owner?.nickname || 'Owner');
 
   const handleSaveGeneral = async () => {
     if (!name.trim()) {
@@ -278,11 +280,19 @@ export default function BoardSettingsModal({
                   {board.owner && (
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-medium">
-                            {board.owner.nickname.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
+                        {ownerAvatarSrc ? (
+                          <img
+                            src={ownerAvatarSrc}
+                            alt={board.owner.nickname}
+                            className="w-10 h-10 rounded-full object-cover border border-blue-100 bg-white"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-medium">
+                              {board.owner.nickname.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium text-gray-900">{board.owner.nickname}</p>
                           <p className="text-sm text-gray-500">{board.owner.email}</p>
@@ -297,17 +307,31 @@ export default function BoardSettingsModal({
                   {/* Other members */}
                   {board.members
                     ?.filter((m) => m.userId !== board.ownerId)
-                    .map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-gray-600 font-medium">
-                              {member.user?.nickname?.charAt(0).toUpperCase() || '?'}
-                            </span>
-                          </div>
+                    .map((member) => {
+                      const memberAvatarSrc = getAvatarImageSrc(
+                        member.user?.avatar,
+                        member.user?.nickname || 'Member'
+                      );
+
+                      return (
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            {memberAvatarSrc ? (
+                              <img
+                                src={memberAvatarSrc}
+                                alt={member.user?.nickname || 'Member'}
+                                className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                <span className="text-gray-600 font-medium">
+                                  {member.user?.nickname?.charAt(0).toUpperCase() || '?'}
+                                </span>
+                              </div>
+                            )}
                           <div>
                             <p className="font-medium text-gray-900">
                               {member.user?.nickname || '알 수 없음'}
@@ -330,9 +354,10 @@ export default function BoardSettingsModal({
                               </svg>
                             </button>
                           )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                   {(!board.members || board.members.length === 0) && !board.owner && (
                     <div className="text-center py-8 text-gray-500">

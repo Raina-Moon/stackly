@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { Card } from '@/hooks/useBoard';
+import { useMemo, useState } from 'react';
+import { Board, Card } from '@/hooks/useBoard';
 import { useUpdateCard, useDeleteCard } from '@/hooks/useCard';
+import {
+  useCreateSchedule,
+  useDeleteSchedule,
+  useSchedulesByCard,
+  useUpdateSchedule,
+} from '@/hooks/useSchedule';
 import { useToast } from '@/contexts/ToastContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useSocket } from '@/contexts/SocketContext';
+import { useAuth } from '@/contexts/AuthContext';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface CardDetailModalProps {
@@ -13,6 +20,7 @@ interface CardDetailModalProps {
   onClose: () => void;
   card: Card;
   boardId: string;
+  board: Board;
 }
 
 const colorOptions = [
@@ -37,11 +45,17 @@ export default function CardDetailModal({
   onClose,
   card,
   boardId,
+  board,
 }: CardDetailModalProps) {
   const { showToast } = useToast();
   const { emitCardUpdate, emitCardDelete } = useSocket();
+  const { user } = useAuth();
   const updateCard = useUpdateCard();
   const deleteCard = useDeleteCard();
+  const { data: cardSchedules = [], isLoading: schedulesLoading } = useSchedulesByCard(card.id);
+  const createSchedule = useCreateSchedule();
+  const updateSchedule = useUpdateSchedule();
+  const deleteSchedule = useDeleteSchedule();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -57,6 +71,55 @@ export default function CardDetailModal({
   const [estimatedHours, setEstimatedHours] = useState<string>(
     card.estimatedHours?.toString() || ''
   );
+  const [assigneeId, setAssigneeId] = useState(card.assigneeId || '');
+  const [newScheduleDate, setNewScheduleDate] = useState('');
+  const [newScheduleStart, setNewScheduleStart] = useState('');
+  const [newScheduleEnd, setNewScheduleEnd] = useState('');
+  const [newScheduleTitle, setNewScheduleTitle] = useState('');
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+  const [editingScheduleTitle, setEditingScheduleTitle] = useState('');
+  const [editingScheduleDate, setEditingScheduleDate] = useState('');
+  const [editingScheduleStart, setEditingScheduleStart] = useState('');
+  const [editingScheduleEnd, setEditingScheduleEnd] = useState('');
+
+  const assigneeOptions = useMemo(() => [
+    ...(board.owner ? [{
+      id: board.owner.id,
+      nickname: board.owner.nickname,
+      email: board.owner.email,
+      roleLabel: '소유자',
+    }] : []),
+    ...((board.members || [])
+      .filter((member) => member.user && member.user.id !== board.ownerId)
+      .map((member) => ({
+        id: member.user!.id,
+        nickname: member.user!.nickname,
+        email: member.user!.email,
+        roleLabel: member.role,
+      }))),
+  ], [board]);
+
+  const assignedUser = assigneeOptions.find((option) => option.id === (card.assigneeId || assigneeId));
+
+  const buildDateTimeIso = (date: string, time: string) => {
+    if (!date || !time) return null;
+    const dt = new Date(`${date}T${time}:00`);
+    if (Number.isNaN(dt.getTime())) return null;
+    return dt.toISOString();
+  };
+
+  const splitScheduleDateTime = (iso: string) => {
+    const date = new Date(iso);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return {
+      date: `${yyyy}-${mm}-${dd}`,
+      time: `${hh}:${min}`,
+    };
+  };
 
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim();
@@ -91,6 +154,7 @@ export default function CardDetailModal({
       tags: tags.length > 0 ? tags : [],
       dueDate: dueDate || undefined,
       estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
+      assigneeId: assigneeId || undefined,
     };
 
     try {
@@ -149,6 +213,94 @@ export default function CardDetailModal({
     }
   };
 
+  const handleCreateScheduleBlock = async () => {
+    const startIso = buildDateTimeIso(newScheduleDate, newScheduleStart);
+    const endIso = buildDateTimeIso(newScheduleDate, newScheduleEnd);
+    if (!startIso || !endIso) {
+      showToast('스케줄 날짜와 시간을 입력해주세요', 'error');
+      return;
+    }
+    if (new Date(endIso) <= new Date(startIso)) {
+      showToast('종료 시간은 시작 시간보다 늦어야 합니다', 'error');
+      return;
+    }
+
+    const targetUserId = assigneeId || card.assigneeId || user?.id;
+    if (!targetUserId) {
+      showToast('담당자를 지정하거나 로그인 상태를 확인해주세요', 'error');
+      return;
+    }
+
+    try {
+      await createSchedule.mutateAsync({
+        title: (newScheduleTitle || card.title).trim(),
+        startTime: startIso,
+        endTime: endIso,
+        userId: targetUserId,
+        cardId: card.id,
+        type: 'event',
+        color: card.color,
+      });
+      showToast('카드 작업 스케줄이 생성되었습니다', 'success');
+      setNewScheduleTitle('');
+      setNewScheduleDate('');
+      setNewScheduleStart('');
+      setNewScheduleEnd('');
+    } catch (error: any) {
+      showToast(error?.message || '스케줄 생성에 실패했습니다', 'error');
+    }
+  };
+
+  const beginEditSchedule = (schedule: { id: string; title: string; startTime: string; endTime: string }) => {
+    const start = splitScheduleDateTime(schedule.startTime);
+    const end = splitScheduleDateTime(schedule.endTime);
+    setEditingScheduleId(schedule.id);
+    setEditingScheduleTitle(schedule.title);
+    setEditingScheduleDate(start.date);
+    setEditingScheduleStart(start.time);
+    setEditingScheduleEnd(end.time);
+  };
+
+  const handleSaveScheduleEdit = async (scheduleId: string) => {
+    const startIso = buildDateTimeIso(editingScheduleDate, editingScheduleStart);
+    const endIso = buildDateTimeIso(editingScheduleDate, editingScheduleEnd);
+    if (!startIso || !endIso) {
+      showToast('스케줄 날짜와 시간을 입력해주세요', 'error');
+      return;
+    }
+    if (new Date(endIso) <= new Date(startIso)) {
+      showToast('종료 시간은 시작 시간보다 늦어야 합니다', 'error');
+      return;
+    }
+
+    try {
+      await updateSchedule.mutateAsync({
+        id: scheduleId,
+        data: {
+          title: editingScheduleTitle.trim() || card.title,
+          startTime: startIso,
+          endTime: endIso,
+        },
+      });
+      showToast('스케줄이 수정되었습니다', 'success');
+      setEditingScheduleId(null);
+    } catch (error: any) {
+      showToast(error?.message || '스케줄 수정에 실패했습니다', 'error');
+    }
+  };
+
+  const handleDeleteScheduleBlock = async (scheduleId: string) => {
+    try {
+      await deleteSchedule.mutateAsync({ id: scheduleId, cardId: card.id });
+      showToast('스케줄이 삭제되었습니다', 'success');
+      if (editingScheduleId === scheduleId) {
+        setEditingScheduleId(null);
+      }
+    } catch (error: any) {
+      showToast(error?.message || '스케줄 삭제에 실패했습니다', 'error');
+    }
+  };
+
   const handleCancel = () => {
     // Reset form to original values
     setTitle(card.title);
@@ -158,6 +310,7 @@ export default function CardDetailModal({
     setTags(card.tags || []);
     setDueDate(card.dueDate ? card.dueDate.split('T')[0] : '');
     setEstimatedHours(card.estimatedHours?.toString() || '');
+    setAssigneeId(card.assigneeId || '');
     setIsEditing(false);
   };
 
@@ -415,6 +568,26 @@ export default function CardDetailModal({
                     />
                   </div>
                 </div>
+
+                {/* Assignee */}
+                <div>
+                  <label htmlFor="edit-assignee" className="block text-sm font-medium text-gray-700 mb-1">
+                    담당자
+                  </label>
+                  <select
+                    id="edit-assignee"
+                    value={assigneeId}
+                    onChange={(e) => setAssigneeId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  >
+                    <option value="">미지정</option>
+                    {assigneeOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.nickname} ({option.roleLabel})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </>
             ) : (
               /* View Mode */
@@ -466,6 +639,13 @@ export default function CardDetailModal({
                       <span className="text-sm text-gray-600">{card.estimatedHours}시간</span>
                     </div>
                   )}
+
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">담당자</h4>
+                    <span className="text-sm text-gray-600">
+                      {assignedUser ? `${assignedUser.nickname} (${assignedUser.roleLabel})` : '미지정'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Tags */}
@@ -486,6 +666,167 @@ export default function CardDetailModal({
                 )}
               </>
             )}
+
+            {/* Linked schedules / work blocks */}
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-indigo-900">작업 스케줄 (시간 블록)</h4>
+                  <p className="text-xs text-indigo-700 mt-0.5">
+                    이 카드와 연결된 실제 수행 시간을 날짜/시간 단위로 관리합니다.
+                  </p>
+                </div>
+                <span className="text-xs font-medium text-indigo-700 bg-white px-2 py-1 rounded border border-indigo-100">
+                  {cardSchedules.length}개
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {schedulesLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-indigo-600" />
+                  </div>
+                ) : cardSchedules.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-indigo-200 bg-white/70 px-3 py-4 text-sm text-indigo-700">
+                    아직 연결된 작업 스케줄이 없습니다. 아래에서 첫 시간 블록을 추가해보세요.
+                  </div>
+                ) : (
+                  cardSchedules.map((schedule) => {
+                    const start = new Date(schedule.startTime);
+                    const end = new Date(schedule.endTime);
+                    const isEditingSchedule = editingScheduleId === schedule.id;
+                    const dateLabel = start.toLocaleDateString('ko-KR');
+                    const timeLabel = `${start.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
+
+                    return (
+                      <div key={schedule.id} className="rounded-lg border border-indigo-100 bg-white p-3">
+                        {isEditingSchedule ? (
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              value={editingScheduleTitle}
+                              onChange={(e) => setEditingScheduleTitle(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              placeholder="스케줄 제목"
+                            />
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <input
+                                type="date"
+                                value={editingScheduleDate}
+                                onChange={(e) => setEditingScheduleDate(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                              <input
+                                type="time"
+                                value={editingScheduleStart}
+                                onChange={(e) => setEditingScheduleStart(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                              <input
+                                type="time"
+                                value={editingScheduleEnd}
+                                onChange={(e) => setEditingScheduleEnd(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditingScheduleId(null)}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveScheduleEdit(schedule.id)}
+                                disabled={updateSchedule.isPending}
+                                className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                              >
+                                저장
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{schedule.title}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{dateLabel}</p>
+                              <p className="text-xs text-indigo-700 font-medium">{timeLabel}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => beginEditSchedule(schedule)}
+                                className="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              >
+                                수정
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteScheduleBlock(schedule.id)}
+                                disabled={deleteSchedule.isPending}
+                                className="px-2.5 py-1.5 rounded-lg border border-red-200 bg-red-50 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="mt-4 rounded-lg border border-dashed border-indigo-200 bg-white/80 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 mb-2">
+                  새 시간 블록 추가
+                </p>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={newScheduleTitle}
+                    onChange={(e) => setNewScheduleTitle(e.target.value)}
+                    placeholder="스케줄 제목 (비우면 카드 제목 사용)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input
+                      type="date"
+                      value={newScheduleDate}
+                      onChange={(e) => setNewScheduleDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="time"
+                      value={newScheduleStart}
+                      onChange={(e) => setNewScheduleStart(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="time"
+                      value={newScheduleEnd}
+                      onChange={(e) => setNewScheduleEnd(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-600">
+                      대상 사용자: {assignedUser?.nickname || card.assignee?.nickname || user?.nickname || '없음'} (카드 담당자 우선)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCreateScheduleBlock}
+                      disabled={createSchedule.isPending}
+                      className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      {createSchedule.isPending ? '추가 중...' : '시간 블록 추가'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer (only in edit mode) */}

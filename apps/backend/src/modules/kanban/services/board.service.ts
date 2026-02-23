@@ -61,7 +61,7 @@ export class BoardService {
   async findById(id: string): Promise<Board> {
     const board = await this.boardRepository.findOne({
       where: { id, deletedAt: IsNull() },
-      relations: ['columns', 'cards', 'members', 'owner'],
+      relations: ['columns', 'cards', 'members', 'members.user', 'owner'],
     });
 
     if (!board) {

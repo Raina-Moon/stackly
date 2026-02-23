@@ -22,6 +22,7 @@ export interface Board {
     id: string;
     nickname: string;
     email: string;
+    avatar?: string;
   };
 }
 
@@ -50,6 +51,20 @@ export interface Card {
   boardId: string;
   columnId: string;
   assigneeId?: string;
+  assignee?: {
+    id: string;
+    nickname: string;
+    email: string;
+    avatar?: string;
+  } | null;
+  schedules?: Array<{
+    id: string;
+    title: string;
+    startTime: string;
+    endTime: string;
+    userId: string;
+    cardId?: string | null;
+  }>;
 }
 
 export interface BoardMember {
@@ -64,6 +79,7 @@ export interface BoardMember {
     id: string;
     nickname: string;
     email: string;
+    avatar?: string;
   };
 }
 

@@ -2,14 +2,18 @@
 
 import { useState } from 'react';
 import { useCreateCard } from '@/hooks/useCard';
+import { useCreateSchedule } from '@/hooks/useSchedule';
+import { Board } from '@/hooks/useBoard';
 import { useToast } from '@/contexts/ToastContext';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useSocket } from '@/contexts/SocketContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CreateCardModalProps {
   isOpen: boolean;
   onClose: () => void;
   boardId: string;
+  board: Board;
   columnId: string;
   existingCardsCount: number;
 }
@@ -35,12 +39,15 @@ export default function CreateCardModal({
   isOpen,
   onClose,
   boardId,
+  board,
   columnId,
   existingCardsCount,
 }: CreateCardModalProps) {
   const { showToast } = useToast();
   const { emitCardCreate } = useSocket();
+  const { user } = useAuth();
   const createCard = useCreateCard();
+  const createSchedule = useCreateSchedule();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -50,6 +57,34 @@ export default function CreateCardModal({
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
   const [estimatedHours, setEstimatedHours] = useState<string>('');
+  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [createWorkBlock, setCreateWorkBlock] = useState(false);
+  const [workDate, setWorkDate] = useState('');
+  const [workStartTime, setWorkStartTime] = useState('');
+  const [workEndTime, setWorkEndTime] = useState('');
+  const [workTitle, setWorkTitle] = useState('');
+
+  const assigneeOptions = [
+    ...(board.owner ? [{
+      id: board.owner.id,
+      nickname: board.owner.nickname,
+      email: board.owner.email,
+      roleLabel: '소유자',
+    }] : []),
+    ...((board.members || [])
+      .filter((member) => member.user && member.user.id !== board.ownerId)
+      .map((member) => ({
+        id: member.user!.id,
+        nickname: member.user!.nickname,
+        email: member.user!.email,
+        roleLabel: member.role,
+      }))),
+  ];
+
+  const buildDateTime = (date: string, time: string) => {
+    if (!date || !time) return null;
+    return new Date(`${date}T${time}:00`);
+  };
 
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim();
@@ -90,9 +125,29 @@ export default function CreateCardModal({
           tags: tags.length > 0 ? tags : undefined,
           dueDate: dueDate || undefined,
           estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
+          assigneeId: assigneeId || undefined,
           columnId,
         },
       });
+
+      if (createWorkBlock && workDate && workStartTime && workEndTime) {
+        const start = buildDateTime(workDate, workStartTime);
+        const end = buildDateTime(workDate, workEndTime);
+
+        if (start && end && end > start) {
+          await createSchedule.mutateAsync({
+            title: (workTitle || title).trim() || '작업 시간 블록',
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+            userId: assigneeId || user?.id || '',
+            cardId: newCard.id,
+            type: 'event',
+            color: color || board.color,
+          });
+        } else {
+          showToast('작업 시간 블록 시간 범위가 올바르지 않아 카드만 생성되었습니다', 'error');
+        }
+      }
 
       // Emit socket event for real-time sync
       emitCardCreate({ boardId, card: { ...newCard } as Record<string, unknown> });
@@ -113,6 +168,12 @@ export default function CreateCardModal({
     setTags([]);
     setDueDate('');
     setEstimatedHours('');
+    setAssigneeId('');
+    setCreateWorkBlock(false);
+    setWorkDate('');
+    setWorkStartTime('');
+    setWorkEndTime('');
+    setWorkTitle('');
     onClose();
   };
 
@@ -311,6 +372,91 @@ export default function CreateCardModal({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>
+            </div>
+
+            {/* Assignee */}
+            <div>
+              <label htmlFor="assignee" className="block text-sm font-medium text-gray-700 mb-1">
+                담당자
+              </label>
+              <select
+                id="assignee"
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              >
+                <option value="">미지정</option>
+                {assigneeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.nickname} ({option.roleLabel})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Optional work schedule block */}
+            <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={createWorkBlock}
+                  onChange={(e) => setCreateWorkBlock(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-blue-900">
+                  카드 생성과 동시에 작업 스케줄 시간 블록 만들기
+                </span>
+              </label>
+
+              {createWorkBlock && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label htmlFor="workTitle" className="block text-xs font-medium text-gray-700 mb-1">
+                      스케줄 제목 (비워두면 카드 제목 사용)
+                    </label>
+                    <input
+                      id="workTitle"
+                      type="text"
+                      value={workTitle}
+                      onChange={(e) => setWorkTitle(e.target.value)}
+                      placeholder="예: 초안 작성 시간"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">날짜</label>
+                      <input
+                        type="date"
+                        value={workDate}
+                        onChange={(e) => setWorkDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">시작</label>
+                      <input
+                        type="time"
+                        value={workStartTime}
+                        onChange={(e) => setWorkStartTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">종료</label>
+                      <input
+                        type="time"
+                        value={workEndTime}
+                        onChange={(e) => setWorkEndTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    담당자가 없으면 현재 사용자 기준으로 일정이 생성됩니다.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

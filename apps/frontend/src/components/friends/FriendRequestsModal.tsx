@@ -7,6 +7,7 @@ import {
   type FriendRequest,
 } from '@/hooks/useFriends';
 import { useToast } from '@/contexts/ToastContext';
+import { getAvatarImageSrc } from '@/lib/avatar';
 
 interface FriendRequestsModalProps {
   isOpen: boolean;
@@ -80,15 +81,17 @@ export default function FriendRequestsModal({ isOpen, onClose }: FriendRequestsM
             </div>
           ) : requests && requests.length > 0 ? (
             <div className="space-y-3">
-              {requests.map((request) => (
+              {requests.map((request) => {
+                const avatarSrc = getAvatarImageSrc(request.requester.avatar, request.requester.nickname);
+                return (
                 <div
                   key={request.id}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    {request.requester.avatar ? (
+                    {avatarSrc ? (
                       <img
-                        src={request.requester.avatar}
+                        src={avatarSrc}
                         alt={request.requester.nickname}
                         className="w-12 h-12 rounded-full object-cover"
                       />
@@ -128,7 +131,8 @@ export default function FriendRequestsModal({ isOpen, onClose }: FriendRequestsM
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">

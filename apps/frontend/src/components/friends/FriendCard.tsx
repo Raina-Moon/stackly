@@ -1,6 +1,7 @@
 'use client';
 
 import type { ContactUser } from '@/hooks/useFriends';
+import { getAvatarImageSrc } from '@/lib/avatar';
 
 interface FriendCardProps {
   contact: ContactUser;
@@ -28,14 +29,16 @@ export default function FriendCard({
     return contact.firstName || contact.nickname;
   };
 
+  const avatarSrc = getAvatarImageSrc(contact.avatar, contact.nickname);
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-4">
         {/* Avatar */}
         <div className="flex-shrink-0">
-          {contact.avatar ? (
+          {avatarSrc ? (
             <img
-              src={contact.avatar}
+              src={avatarSrc}
               alt={contact.nickname}
               className="w-12 h-12 rounded-full object-cover"
             />

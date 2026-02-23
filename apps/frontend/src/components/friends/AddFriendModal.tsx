@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useUserSearch, useSendFriendRequest, type SearchUser } from '@/hooks/useFriends';
 import { useToast } from '@/contexts/ToastContext';
+import { getAvatarImageSrc } from '@/lib/avatar';
 
 interface AddFriendModalProps {
   isOpen: boolean;
@@ -94,15 +95,17 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
             </div>
           ) : searchResults && searchResults.length > 0 ? (
             <div className="space-y-3">
-              {searchResults.map((user) => (
+              {searchResults.map((user) => {
+                const avatarSrc = getAvatarImageSrc(user.avatar, user.nickname);
+                return (
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    {user.avatar ? (
+                    {avatarSrc ? (
                       <img
-                        src={user.avatar}
+                        src={avatarSrc}
                         alt={user.nickname}
                         className="w-10 h-10 rounded-full object-cover"
                       />
@@ -126,7 +129,8 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                     {sendRequest.isPending ? '전송 중...' : '요청 보내기'}
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : debouncedQuery.length >= 2 ? (
             <div className="text-center py-8 text-gray-500">

@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { getAvatarImageSrc } from '@/lib/avatar';
 import LoginModal from '../auth/LoginModal';
 
 const menuItems = [
@@ -48,6 +49,7 @@ export default function Sidebar() {
   const { showToast } = useToast();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const userAvatarSrc = getAvatarImageSrc(user?.avatar, user?.nickname || 'User');
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -93,9 +95,17 @@ export default function Sidebar() {
         {isAuthenticated ? (
           <div className="space-y-2">
             <div className="flex items-center gap-3 px-4 py-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-medium">
-                {user?.nickname?.charAt(0).toUpperCase() || 'U'}
-              </div>
+              {userAvatarSrc ? (
+                <img
+                  src={userAvatarSrc}
+                  alt={user?.nickname || 'User'}
+                  className="w-8 h-8 rounded-full object-cover border border-gray-700"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-medium">
+                  {user?.nickname?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user?.nickname}</p>
                 <p className="text-xs text-gray-400 truncate">{user?.email}</p>

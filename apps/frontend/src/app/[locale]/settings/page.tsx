@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import MainLayout from '@/components/layout/MainLayout';
 import LoginModal from '@/components/auth/LoginModal';
+import AvatarStudioCard from '@/components/settings/AvatarStudioCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useUpdateProfile } from '@/hooks/useUser';
@@ -169,6 +170,24 @@ export default function SettingsPage() {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
     });
+  };
+
+  const handleSaveAvatar = async (avatarValue: string) => {
+    try {
+      await updateProfile.mutateAsync({ avatar: avatarValue });
+      showToast('아바타가 업데이트되었습니다.', 'success');
+    } catch (error: any) {
+      showToast(error?.message || '아바타 업데이트에 실패했습니다.', 'error');
+    }
+  };
+
+  const handleClearAvatar = async () => {
+    try {
+      await updateProfile.mutateAsync({ avatar: '' });
+      showToast('아바타가 제거되었습니다.', 'success');
+    } catch (error: any) {
+      showToast(error?.message || '아바타 제거에 실패했습니다.', 'error');
+    }
   };
 
   const sections = useMemo<SettingSection[]>(() => [
@@ -498,6 +517,14 @@ export default function SettingsPage() {
           </div>
         </form>
       </section>
+
+      <AvatarStudioCard
+        avatar={user?.avatar}
+        nickname={user?.nickname || 'U'}
+        isSaving={updateProfile.isPending}
+        onSaveAvatar={handleSaveAvatar}
+        onClearAvatar={handleClearAvatar}
+      />
 
       <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm xl:col-span-2">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePresence, getUserInitials, getUserColor } from '@/hooks/usePresence';
 import type { UserPresence } from '@/lib/socket';
+import { getAvatarImageSrc } from '@/lib/avatar';
 
 interface OnlineUsersProps {
   boardId: string;
@@ -85,6 +86,7 @@ export function UserAvatar({ user, size = 'md' }: UserAvatarProps) {
   const audioLevel = user.audioLevel || 0;
   const scale = user.isInVoice ? 1 + audioLevel * 0.3 : 1;
   const glowIntensity = audioLevel * 20; // 0 to 20px blur
+  const avatarSrc = getAvatarImageSrc(user.avatar, user.nickname);
 
   return (
     <div className="relative">
@@ -112,9 +114,9 @@ export function UserAvatar({ user, size = 'md' }: UserAvatarProps) {
             : 'none',
         }}
       >
-        {user.avatar ? (
+        {avatarSrc ? (
           <img
-            src={user.avatar}
+            src={avatarSrc}
             alt={user.nickname}
             className="w-full h-full rounded-full object-cover"
           />

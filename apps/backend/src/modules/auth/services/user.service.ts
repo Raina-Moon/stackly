@@ -93,6 +93,16 @@ export class UserService {
       }
     }
 
+    if (updateUserDto.nickname && updateUserDto.nickname !== user.nickname) {
+      const existingUser = await this.userRepository.findOne({
+        where: { nickname: updateUserDto.nickname, deletedAt: IsNull() },
+      });
+
+      if (existingUser && existingUser.id !== user.id) {
+        throw new ConflictException('이미 사용 중인 닉네임입니다.');
+      }
+    }
+
     Object.assign(user, updateUserDto);
     return this.userRepository.save(user);
   }

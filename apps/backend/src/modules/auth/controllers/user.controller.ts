@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -40,6 +41,31 @@ export class UserController {
     // Exclude passwords from response
     const sanitized = data.map(({ password, ...rest }) => rest);
     return { data: sanitized, total };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@GetUser() authUser: AuthUser) {
+    const user = await this.userService.findById(authUser.id);
+    const { password, ...result } = user;
+    return result;
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  async updateMe(@GetUser() authUser: AuthUser, @Body() updateUserDto: UpdateUserDto) {
+    const profileUpdate: UpdateUserDto = {
+      nickname: updateUserDto.nickname,
+      firstName: updateUserDto.firstName,
+      lastName: updateUserDto.lastName,
+      avatar: updateUserDto.avatar,
+    };
+    const user = await this.userService.update(authUser.id, profileUpdate);
+    const { password, ...result } = user;
+    return {
+      success: true,
+      user: result,
+    };
   }
 
   @Get(':id')

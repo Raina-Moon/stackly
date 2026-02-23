@@ -64,5 +64,178 @@
     "loginRequiredRegister": "회원가입",
     "loginSuccess": "로그인 성공!",
     "loginMissingFields": "이메일과 비밀번호를 입력해주세요"
+  },
+  "settings": {
+    "badge": "설정 (구조 초안)",
+    "title": "워크스페이스 및 계정 설정",
+    "subtitle": "협업 서비스에 필요한 설정 영역을 먼저 구조화했습니다. 섹션별로 나눠서 API를 순차적으로 연결할 수 있습니다.",
+    "accountSnapshot": "현재 계정",
+    "authRequiredTitle": "설정을 관리하려면 로그인하세요",
+    "authRequiredDescription": "설정에는 계정, 알림, 보안 관련 항목이 포함되므로 인증이 필요합니다.",
+    "loginCta": "로그인",
+    "previewCta": "섹션 미리보기",
+    "planTitle": "구현 진행도",
+    "planDescription": "이 페이지는 협업 제품에서 필요한 핵심 설정 도메인을 기준으로 먼저 스캐폴딩되었습니다.",
+    "currentValue": "현재값",
+    "status": {
+      "ready": "준비됨",
+      "partial": "부분구현",
+      "planned": "예정",
+      "danger": "민감"
+    },
+    "actions": {
+      "edit": "수정",
+      "view": "보기",
+      "upload": "업로드",
+      "change": "변경",
+      "configure": "설정",
+      "manage": "관리",
+      "review": "검토",
+      "enable": "활성화",
+      "export": "내보내기",
+      "connect": "연결",
+      "logoutAll": "모든 기기 로그아웃",
+      "deleteAccount": "계정 삭제"
+    },
+    "values": {
+      "english": "영어",
+      "korean": "한국어",
+      "dashboardHome": "대시보드(홈)",
+      "comfortable": "보통",
+      "notEnabled": "비활성화됨",
+      "avatarUploaded": "사용자 아바타 업로드됨",
+      "avatarDefault": "기본 아바타 사용 중"
+    },
+    "sections": {
+      "account": {
+        "title": "프로필 및 계정",
+        "description": "보드와 협업 UI 전반에 표시되는 사용자 식별 정보와 공개 프로필 설정입니다."
+      },
+      "preferences": {
+        "title": "환경설정",
+        "description": "언어, 시간대, 보드 표시 방식 등 개인 UI 기본값을 관리합니다."
+      },
+      "notifications": {
+        "title": "알림",
+        "description": "보드 활동, 멘션, 리마인더 알림 전달 방식을 제어합니다."
+      },
+      "security": {
+        "title": "보안",
+        "description": "비밀번호, 세션, 계정 보호 관련 설정입니다."
+      },
+      "data": {
+        "title": "데이터 및 연동",
+        "description": "내보내기, API 접근, 향후 외부 서비스 연동을 위한 영역입니다."
+      },
+      "danger": {
+        "title": "위험 구역",
+        "description": "계정에 큰 영향을 주는 작업으로 추가 확인 절차가 필요한 항목입니다."
+      }
+    },
+    "items": {
+      "profile": {
+        "label": "표시 프로필",
+        "description": "협업 화면에 노출되는 이름, 닉네임, 프로필 정보를 관리합니다."
+      },
+      "email": {
+        "label": "이메일 주소",
+        "description": "로그인 및 계정 복구에 사용하는 기본 이메일입니다."
+      },
+      "avatar": {
+        "label": "프로필 사진",
+        "description": "보드, 댓글, 접속 상태 표시 등에 사용할 아바타를 업로드합니다."
+      },
+      "language": {
+        "label": "언어",
+        "description": "내비게이션과 페이지 텍스트에 사용할 기본 UI 언어입니다."
+      },
+      "timezone": {
+        "label": "시간대",
+        "description": "일정, 리마인더, 시간 표시의 일관성을 위해 사용됩니다."
+      },
+      "startPage": {
+        "label": "시작 페이지",
+        "description": "로그인 후 처음 열리는 기본 페이지를 선택합니다."
+      },
+      "boardDensity": {
+        "label": "보드 밀도",
+        "description": "보드/카드 레이아웃의 기본 간격과 밀도를 설정합니다."
+      },
+      "mentions": {
+        "label": "멘션 알림",
+        "description": "카드나 보드 활동에서 나를 멘션했을 때 알림을 받습니다."
+      },
+      "boardActivity": {
+        "label": "보드 활동 알림",
+        "description": "담당자 변경, 이동, 상태 변경 등의 업데이트 알림입니다."
+      },
+      "reminders": {
+        "label": "리마인더",
+        "description": "마감일 및 일정 이벤트 리마인더 알림 설정입니다."
+      },
+      "password": {
+        "label": "비밀번호",
+        "description": "비밀번호 변경과 계정 보안 정책 관련 항목입니다."
+      },
+      "sessions": {
+        "label": "세션 및 기기",
+        "description": "활성 세션을 확인하고 다른 기기의 접근을 해제합니다."
+      },
+      "twoFactor": {
+        "label": "2단계 인증",
+        "description": "로그인 보호를 위해 추가 인증 단계를 활성화합니다."
+      },
+      "export": {
+        "label": "데이터 내보내기",
+        "description": "보드, 카드, 계정 관련 데이터를 내보냅니다."
+      },
+      "integrations": {
+        "label": "외부 연동",
+        "description": "추후 캘린더, 채팅, 자동화 도구와 연결합니다."
+      },
+      "apiTokens": {
+        "label": "API 토큰",
+        "description": "연동 및 자동화용 개인 토큰을 관리합니다."
+      },
+      "logoutAll": {
+        "label": "모든 기기 로그아웃",
+        "description": "확인 절차 후 현재 흐름을 제외한 모든 세션을 종료합니다."
+      },
+      "deleteAccount": {
+        "label": "계정 삭제",
+        "description": "보안 확인 절차 후 계정과 관련 데이터를 영구 삭제합니다."
+      }
+    },
+    "implementationNotes": {
+      "title": "다음 연결 작업",
+      "profile": "프로필 수정은 사용자 업데이트 API와 아바타 업로드 플로우가 필요합니다.",
+      "notifications": "알림 환경설정은 사용자 단위 저장 API가 필요합니다.",
+      "security": "세션/기기 관리는 현재 토큰/세션 인프라를 재사용할 수 있습니다.",
+      "data": "내보내기/삭제는 비동기 작업과 감사 가능한 확인 절차가 필요합니다."
+    },
+    "profileEditor": {
+      "title": "프로필 수정",
+      "description": "보드와 활동 화면에서 협업자에게 표시되는 사용자 정보를 수정합니다.",
+      "help": "이메일은 현재 읽기 전용입니다. 이후 별도 인증 기반 이메일 변경 플로우를 추가할 수 있습니다.",
+      "fields": {
+        "nickname": "닉네임",
+        "email": "이메일",
+        "firstName": "이름",
+        "lastName": "성"
+      },
+      "actions": {
+        "reset": "초기화",
+        "save": "프로필 저장",
+        "saving": "저장 중..."
+      },
+      "validation": {
+        "nicknameRequired": "닉네임은 필수입니다.",
+        "nicknameLength": "닉네임은 2자 이상 20자 이하여야 합니다."
+      },
+      "toast": {
+        "saved": "프로필이 업데이트되었습니다.",
+        "failed": "프로필 업데이트에 실패했습니다."
+      }
+    }
   }
 }

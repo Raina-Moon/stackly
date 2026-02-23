@@ -12,6 +12,7 @@ interface User {
 }
 
 interface UpdateProfileData {
+  nickname?: string;
   firstName?: string;
   lastName?: string;
   avatar?: string;

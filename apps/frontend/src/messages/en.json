@@ -64,5 +64,178 @@
     "loginRequiredRegister": "Sign up",
     "loginSuccess": "Logged in successfully!",
     "loginMissingFields": "Please enter your email and password"
+  },
+  "settings": {
+    "badge": "Settings (Scaffold)",
+    "title": "Workspace & account settings",
+    "subtitle": "A structured settings hub is ready. Each section is split so we can connect real APIs incrementally.",
+    "accountSnapshot": "Current account",
+    "authRequiredTitle": "Log in to manage settings",
+    "authRequiredDescription": "Settings contain account, notification, and security options that require authentication.",
+    "loginCta": "Log in",
+    "previewCta": "Preview sections",
+    "planTitle": "Implementation progress",
+    "planDescription": "This page is scaffolded around the settings domains we will need most in a collaboration product.",
+    "currentValue": "Current",
+    "status": {
+      "ready": "Ready",
+      "partial": "Partial",
+      "planned": "Planned",
+      "danger": "Sensitive"
+    },
+    "actions": {
+      "edit": "Edit",
+      "view": "View",
+      "upload": "Upload",
+      "change": "Change",
+      "configure": "Configure",
+      "manage": "Manage",
+      "review": "Review",
+      "enable": "Enable",
+      "export": "Export",
+      "connect": "Connect",
+      "logoutAll": "Log out all devices",
+      "deleteAccount": "Delete account"
+    },
+    "values": {
+      "english": "English",
+      "korean": "Korean",
+      "dashboardHome": "Dashboard (Home)",
+      "comfortable": "Comfortable",
+      "notEnabled": "Not enabled",
+      "avatarUploaded": "Custom avatar uploaded",
+      "avatarDefault": "Using default avatar"
+    },
+    "sections": {
+      "account": {
+        "title": "Profile & account",
+        "description": "Identity and public profile settings shown across boards and collaboration features."
+      },
+      "preferences": {
+        "title": "Preferences",
+        "description": "Personal UI defaults such as language, timezone, and how boards are displayed."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Control how board activity, mentions, and reminders are delivered."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Password, sessions, and account protection settings."
+      },
+      "data": {
+        "title": "Data & integrations",
+        "description": "Export, API access, and future third-party integrations."
+      },
+      "danger": {
+        "title": "Danger zone",
+        "description": "High-impact account actions that require extra confirmation."
+      }
+    },
+    "items": {
+      "profile": {
+        "label": "Display profile",
+        "description": "Name, nickname, and profile information used in collaboration UI."
+      },
+      "email": {
+        "label": "Email address",
+        "description": "Primary email used for login and account recovery."
+      },
+      "avatar": {
+        "label": "Profile photo",
+        "description": "Upload a custom avatar for boards, comments, and presence."
+      },
+      "language": {
+        "label": "Language",
+        "description": "Primary UI language for navigation and page content."
+      },
+      "timezone": {
+        "label": "Timezone",
+        "description": "Used for schedules, reminders, and time display consistency."
+      },
+      "startPage": {
+        "label": "Start page",
+        "description": "Choose which page opens first after login."
+      },
+      "boardDensity": {
+        "label": "Board density",
+        "description": "Default spacing and density for board/card layouts."
+      },
+      "mentions": {
+        "label": "Mentions",
+        "description": "Alerts when someone mentions you in cards or board activity."
+      },
+      "boardActivity": {
+        "label": "Board activity",
+        "description": "Updates for assignments, movements, and status changes."
+      },
+      "reminders": {
+        "label": "Reminders",
+        "description": "Due date and scheduled event reminder preferences."
+      },
+      "password": {
+        "label": "Password",
+        "description": "Change password and define password policy hints for the account."
+      },
+      "sessions": {
+        "label": "Sessions & devices",
+        "description": "Review active sessions and revoke access from other devices."
+      },
+      "twoFactor": {
+        "label": "Two-factor authentication",
+        "description": "Add a second step to protect your account login."
+      },
+      "export": {
+        "label": "Export data",
+        "description": "Export boards, cards, and account-related data."
+      },
+      "integrations": {
+        "label": "Integrations",
+        "description": "Connect calendar, chat, or automation tools later."
+      },
+      "apiTokens": {
+        "label": "API tokens",
+        "description": "Manage personal tokens for integrations and automation."
+      },
+      "logoutAll": {
+        "label": "Log out all devices",
+        "description": "Terminate sessions on every device except the current flow after confirmation."
+      },
+      "deleteAccount": {
+        "label": "Delete account",
+        "description": "Permanently delete your account and associated data after a secure confirmation flow."
+      }
+    },
+    "implementationNotes": {
+      "title": "What to wire next",
+      "profile": "Profile editing needs a user update endpoint and avatar upload flow.",
+      "notifications": "Notification preferences need persisted user-level settings.",
+      "security": "Session/device management can reuse token/session infrastructure.",
+      "data": "Export and deletion require async jobs plus audit-safe confirmations."
+    },
+    "profileEditor": {
+      "title": "Edit profile",
+      "description": "Update the identity information shown to collaborators across boards and activity.",
+      "help": "Email is read-only for now. We can add a separate verified email change flow later.",
+      "fields": {
+        "nickname": "Nickname",
+        "email": "Email",
+        "firstName": "First name",
+        "lastName": "Last name"
+      },
+      "actions": {
+        "reset": "Reset",
+        "save": "Save profile",
+        "saving": "Saving..."
+      },
+      "validation": {
+        "nicknameRequired": "Nickname is required.",
+        "nicknameLength": "Nickname must be 2-20 characters."
+      },
+      "toast": {
+        "saved": "Profile updated.",
+        "failed": "Failed to update profile."
+      }
+    }
   }
 }

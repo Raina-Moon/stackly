@@ -44,7 +44,12 @@
     "add": "일정 추가",
     "demoMeeting": "팀 회의",
     "demoDeadline": "프로젝트 A 마감",
-    "demoReview": "코드 리뷰"
+    "demoReview": "코드 리뷰",
+    "status": {
+      "pending": "대기",
+      "in_progress": "진행",
+      "completed": "완료"
+    }
   },
   "auth": {
     "loginTitle": "로그인",
@@ -236,6 +241,77 @@
         "saved": "프로필이 업데이트되었습니다.",
         "failed": "프로필 업데이트에 실패했습니다."
       }
+    },
+    "notificationCenter": {
+      "title": "알림 채널 및 리마인더 설정",
+      "badge": "프론트 UI 초안",
+      "description": "스케줄 완료 확인 리마인더를 어떤 채널로, 언제 보낼지 설정합니다. 현재는 브라우저/로컬 임시 저장 중심 UI입니다.",
+      "actions": {
+        "save": "설정 저장",
+        "saving": "저장 중..."
+      },
+      "overdue": {
+        "title": "지연 완료 확인 리마인더",
+        "description": "스케줄 종료 후 일정 시간이 지났는데 완료 상태가 아니면 담당자에게 알림을 보냅니다.",
+        "delayLabel": "알림 지연 시간",
+        "delayOption": "{minutes}분 후",
+        "previewLabel": "규칙 미리보기",
+        "previewValue": "종료 후 {minutes}분이 지나도 완료가 아니면 알림"
+      },
+      "summary": {
+        "title": "현재 상태",
+        "browserPermission": "브라우저 권한",
+        "browserSubscriptions": "저장된 브라우저 구독",
+        "activeChannels": "활성 채널 수",
+        "loading": "저장된 사용자 알림 설정을 불러오는 중...",
+        "note": "설정 저장 시 사용자 계정에 저장되며, API 저장 실패 시에는 브라우저 임시 저장(localStorage)로만 보존됩니다."
+      },
+      "channels": {
+        "enabled": "활성",
+        "disabled": "비활성",
+        "email": {
+          "label": "이메일",
+          "description": "담당자 이메일 주소로 리마인더를 발송합니다."
+        },
+        "slack": {
+          "label": "Slack",
+          "description": "추후 Slack 연동 후 DM 또는 채널 알림을 발송합니다."
+        },
+        "webPush": {
+          "label": "브라우저 알림",
+          "description": "Chrome 등 브라우저 Push 알림으로 바로 알려줍니다."
+        }
+      },
+      "browser": {
+        "title": "브라우저 알림 권한 및 구독",
+        "description": "권한 허용 후 구독 동기화를 실행하면 현재 브라우저를 알림 수신 대상으로 등록합니다.",
+        "permission": {
+          "granted": "허용됨",
+          "denied": "차단됨",
+          "default": "아직 선택 안함",
+          "unsupported": "지원 안함",
+          "unknown": "확인 중"
+        },
+        "actions": {
+          "request": "권한 요청",
+          "requesting": "요청 중...",
+          "sync": "구독 동기화",
+          "syncing": "동기화 중...",
+          "refresh": "상태 새로고침"
+        }
+      },
+      "toast": {
+        "saved": "알림 설정이 계정에 저장되었습니다.",
+        "failed": "알림 설정 저장에 실패했습니다. 브라우저 임시 저장만 반영되었습니다.",
+        "browserUnsupported": "이 브라우저는 Web Push를 지원하지 않습니다.",
+        "permissionGranted": "브라우저 알림 권한이 허용되었습니다.",
+        "permissionDenied": "브라우저 알림 권한이 차단되었습니다.",
+        "permissionDismissed": "브라우저 알림 권한 요청이 닫혔습니다.",
+        "permissionFailed": "브라우저 알림 권한 요청에 실패했습니다.",
+        "browserSynced": "브라우저 알림 구독이 서버에 동기화되었습니다.",
+        "browserSyncFailed": "브라우저 알림 구독 동기화에 실패했습니다."
+      },
+      "footer": "다음 단계: 저장된 사용자 설정을 실제 리마인더 워커 조건/채널 선택에 반영하고, Slack OAuth 및 테스트 알림 보내기 버튼을 추가"
     }
   }
 }

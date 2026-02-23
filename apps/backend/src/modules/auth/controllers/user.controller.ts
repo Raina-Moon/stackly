@@ -13,6 +13,7 @@ import {
 import { UserService } from '../services/user.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { UpdateNotificationPreferencesDto } from '../dto/update-notification-preferences.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser, AuthUser } from '../decorators/get-user.decorator';
 
@@ -65,6 +66,29 @@ export class UserController {
     return {
       success: true,
       user: result,
+    };
+  }
+
+  @Get('me/notification-preferences')
+  @UseGuards(JwtAuthGuard)
+  async getMyNotificationPreferences(@GetUser() authUser: AuthUser) {
+    const preferences = await this.userService.getMyNotificationPreferences(authUser.id);
+    return {
+      success: true,
+      preferences,
+    };
+  }
+
+  @Patch('me/notification-preferences')
+  @UseGuards(JwtAuthGuard)
+  async updateMyNotificationPreferences(
+    @GetUser() authUser: AuthUser,
+    @Body() dto: UpdateNotificationPreferencesDto,
+  ) {
+    const preferences = await this.userService.updateMyNotificationPreferences(authUser.id, dto);
+    return {
+      success: true,
+      preferences,
     };
   }
 

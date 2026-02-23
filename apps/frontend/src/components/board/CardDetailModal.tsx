@@ -1,12 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Board, Card } from '@/hooks/useBoard';
 import { useUpdateCard, useDeleteCard } from '@/hooks/useCard';
 import {
   useCreateSchedule,
   useDeleteSchedule,
   useSchedulesByCard,
+  type ScheduleStatus,
   useUpdateSchedule,
 } from '@/hooks/useSchedule';
 import { useToast } from '@/contexts/ToastContext';
@@ -47,6 +49,7 @@ export default function CardDetailModal({
   boardId,
   board,
 }: CardDetailModalProps) {
+  const tSchedule = useTranslations('schedule');
   const { showToast } = useToast();
   const { emitCardUpdate, emitCardDelete } = useSocket();
   const { user } = useAuth();
@@ -76,6 +79,7 @@ export default function CardDetailModal({
   const [newScheduleStart, setNewScheduleStart] = useState('');
   const [newScheduleEnd, setNewScheduleEnd] = useState('');
   const [newScheduleTitle, setNewScheduleTitle] = useState('');
+  const [newScheduleStatus, setNewScheduleStatus] = useState<ScheduleStatus>('pending');
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [editingScheduleTitle, setEditingScheduleTitle] = useState('');
   const [editingScheduleDate, setEditingScheduleDate] = useState('');
@@ -248,12 +252,14 @@ export default function CardDetailModal({
             userId: targetUserId,
             cardId: card.id,
             type: 'event',
+            status: newScheduleStatus,
             color: card.color,
           })
         )
       );
       showToast('카드 작업 스케줄이 생성되었습니다', 'success');
       setNewScheduleTitle('');
+      setNewScheduleStatus('pending');
       setNewScheduleDate('');
       setNewScheduleStart('');
       setNewScheduleEnd('');
@@ -819,6 +825,25 @@ export default function CardDetailModal({
                     placeholder="스케줄 제목 (비우면 카드 제목 사용)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-gray-700">상태</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['pending', 'in_progress', 'completed'] as ScheduleStatus[]).map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => setNewScheduleStatus(status)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                            newScheduleStatus === status
+                              ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                              : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          {tSchedule(`status.${status}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <input
                       type="date"

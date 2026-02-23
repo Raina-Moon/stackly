@@ -42,6 +42,9 @@ export class User {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'jsonb', nullable: true })
+  notificationPreferences: Record<string, unknown> | null;
+
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date;
 

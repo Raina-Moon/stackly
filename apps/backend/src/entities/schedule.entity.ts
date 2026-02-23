@@ -19,6 +19,12 @@ export enum ScheduleType {
   MILESTONE = 'milestone',
 }
 
+export enum ScheduleStatus {
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+}
+
 @Entity('schedules')
 @Index('idx_schedule_user', ['userId'])
 @Index('idx_schedule_card', ['cardId'])
@@ -39,6 +45,9 @@ export class Schedule {
     default: ScheduleType.EVENT,
   })
   type: ScheduleType;
+
+  @Column({ type: 'varchar', length: 20, default: ScheduleStatus.PENDING })
+  status: ScheduleStatus;
 
   @Column({ type: 'timestamp' })
   @Index('idx_schedule_start_time')
@@ -67,6 +76,12 @@ export class Schedule {
 
   @Column({ type: 'uuid', nullable: true })
   cardId: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  completionFollowupNotifiedAt: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  completionFollowupNotificationEventId: string | null;
 
   @ManyToOne(() => User, (user) => user.schedules, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })

@@ -11,6 +11,9 @@ import { RecurringSchedule } from './entities/recurring-schedule.entity';
 import { BoardMember } from './entities/board-member.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { Friend } from './entities/friend.entity';
+import { NotificationEvent } from './entities/notification-event.entity';
+import { NotificationDelivery } from './entities/notification-delivery.entity';
+import { WebPushSubscriptionEntity } from './entities/web-push-subscription.entity';
 import { AuthModule } from './modules/auth/auth.module';
 import { KanbanModule } from './modules/kanban/kanban.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
@@ -55,6 +58,9 @@ import { FriendsModule } from './modules/friends/friends.module';
               BoardMember,
               RefreshToken,
               Friend,
+              NotificationEvent,
+              NotificationDelivery,
+              WebPushSubscriptionEntity,
             ],
             logging: configService.get('NODE_ENV') === 'development',
           };
@@ -82,8 +88,11 @@ import { FriendsModule } from './modules/friends/friends.module';
             RecurringSchedule,
             BoardMember,
             RefreshToken,
-            Friend,
-          ],
+              Friend,
+              NotificationEvent,
+              NotificationDelivery,
+              WebPushSubscriptionEntity,
+            ],
           logging: configService.get('NODE_ENV') === 'development',
         };
       },

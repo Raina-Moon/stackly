@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { SocketProvider } from '@/contexts/SocketContext';
+import { WebPushBootstrap } from '@/components/notifications/WebPushBootstrap';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -28,7 +29,10 @@ export function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SocketProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <WebPushBootstrap />
+            {children}
+          </ToastProvider>
         </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>

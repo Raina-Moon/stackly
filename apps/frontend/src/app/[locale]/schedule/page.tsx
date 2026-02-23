@@ -1,12 +1,14 @@
 'use client';
 
 import { FormEvent, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import MainLayout from '@/components/layout/MainLayout';
 import LoginModal from '@/components/auth/LoginModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import {
   Schedule,
+  ScheduleStatus,
   useCreateSchedule,
   useDeleteSchedule,
   useSchedulesByUserRange,
@@ -21,7 +23,11 @@ interface EditorState {
   end: string;
   description: string;
   type: 'event' | 'deadline' | 'reminder' | 'milestone';
+  status: ScheduleStatus;
 }
+
+type LinkedFilter = 'all' | 'linked' | 'manual';
+type TypeFilter = 'all' | EditorState['type'];
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -39,6 +45,16 @@ function toIsoLocal(date: string, time: string) {
   return new Date(`${date}T${time}:00`).toISOString();
 }
 
+function formatDurationMinutes(startIso: string, endIso: string) {
+  const diff = Math.max(0, new Date(endIso).getTime() - new Date(startIso).getTime());
+  const mins = Math.round(diff / (1000 * 60));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h && m) return `${h}시간 ${m}분`;
+  if (h) return `${h}시간`;
+  return `${m}분`;
+}
+
 function defaultEditor(selectedDate: string): EditorState {
   return {
     title: '',
@@ -47,6 +63,7 @@ function defaultEditor(selectedDate: string): EditorState {
     end: '10:00',
     description: '',
     type: 'event',
+    status: 'pending',
   };
 }
 
@@ -64,7 +81,16 @@ const typeColors: Record<string, string> = {
   milestone: 'bg-purple-100 text-purple-700 border-purple-200',
 };
 
+const statusColors: Record<ScheduleStatus, string> = {
+  pending: 'bg-gray-100 text-gray-700 border-gray-200',
+  in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
+  completed: 'bg-green-100 text-green-700 border-green-200',
+};
+
+const statusCycle: ScheduleStatus[] = ['pending', 'in_progress', 'completed'];
+
 export default function SchedulePage() {
+  const t = useTranslations('schedule');
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { showToast } = useToast();
   const createSchedule = useCreateSchedule();
@@ -75,6 +101,9 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
   const [editor, setEditor] = useState<EditorState>(() => defaultEditor(toDateInputValue(new Date())));
   const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [linkedFilter, setLinkedFilter] = useState<LinkedFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   const rangeStart = `${selectedDate}T00:00:00.000Z`;
   const rangeEnd = `${selectedDate}T23:59:59.999Z`;
@@ -85,13 +114,44 @@ export default function SchedulePage() {
     rangeEnd
   );
 
+  const filteredSchedules = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return schedules.filter((schedule) => {
+      if (linkedFilter === 'linked' && !schedule.cardId) return false;
+      if (linkedFilter === 'manual' && schedule.cardId) return false;
+      if (typeFilter !== 'all' && schedule.type !== typeFilter) return false;
+      if (!q) return true;
+      return (
+        schedule.title.toLowerCase().includes(q) ||
+        (schedule.description || '').toLowerCase().includes(q) ||
+        (schedule.card?.title || '').toLowerCase().includes(q)
+      );
+    });
+  }, [schedules, searchQuery, linkedFilter, typeFilter]);
+
+  const conflictIds = useMemo(() => {
+    const sorted = [...filteredSchedules].sort(
+      (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+    const ids = new Set<string>();
+    for (let i = 0; i < sorted.length - 1; i += 1) {
+      const currentEnd = new Date(sorted[i].endTime).getTime();
+      const nextStart = new Date(sorted[i + 1].startTime).getTime();
+      if (currentEnd > nextStart) {
+        ids.add(sorted[i].id);
+        ids.add(sorted[i + 1].id);
+      }
+    }
+    return ids;
+  }, [filteredSchedules]);
+
   const hourlyRows = useMemo(() => {
     const rows = Array.from({ length: 24 }, (_, hour) => ({
       hour,
       items: [] as Schedule[],
     }));
 
-    schedules.forEach((schedule) => {
+    filteredSchedules.forEach((schedule) => {
       const start = new Date(schedule.startTime);
       const hour = start.getHours();
       if (rows[hour]) rows[hour].items.push(schedule);
@@ -104,15 +164,36 @@ export default function SchedulePage() {
     });
 
     return rows;
-  }, [schedules]);
+  }, [filteredSchedules]);
 
   const sortedSchedules = useMemo(
     () =>
-      [...schedules].sort(
+      [...filteredSchedules].sort(
         (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
       ),
-    [schedules]
+    [filteredSchedules]
   );
+
+  const scheduleStats = useMemo(() => {
+    const linked = filteredSchedules.filter((s) => !!s.cardId).length;
+    const manual = filteredSchedules.length - linked;
+    const pending = filteredSchedules.filter((s) => (s.status || 'pending') === 'pending').length;
+    const inProgress = filteredSchedules.filter((s) => (s.status || 'pending') === 'in_progress').length;
+    const completed = filteredSchedules.filter((s) => (s.status || 'pending') === 'completed').length;
+    const completionRate = filteredSchedules.length > 0
+      ? Math.round((completed / filteredSchedules.length) * 100)
+      : 0;
+    return {
+      total: filteredSchedules.length,
+      linked,
+      manual,
+      pending,
+      inProgress,
+      completed,
+      completionRate,
+      conflicts: conflictIds.size,
+    };
+  }, [filteredSchedules, conflictIds]);
 
   const selectedDateLabel = useMemo(() => {
     const d = new Date(`${selectedDate}T00:00:00`);
@@ -135,6 +216,12 @@ export default function SchedulePage() {
     const next = toDateInputValue(base);
     setSelectedDate(next);
     setEditor((prev) => ({ ...prev, date: next }));
+  };
+
+  const goToday = () => {
+    const todayValue = toDateInputValue(new Date());
+    setSelectedDate(todayValue);
+    setEditor((prev) => ({ ...prev, date: todayValue }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -161,6 +248,7 @@ export default function SchedulePage() {
             title: editor.title.trim(),
             description: editor.description.trim() || undefined,
             type: editor.type,
+            status: editor.status,
             startTime: startIso,
             endTime: endIso,
           },
@@ -171,6 +259,7 @@ export default function SchedulePage() {
           title: editor.title.trim(),
           description: editor.description.trim() || undefined,
           type: editor.type,
+          status: editor.status,
           startTime: startIso,
           endTime: endIso,
           userId: user.id,
@@ -195,8 +284,26 @@ export default function SchedulePage() {
       end: formatTime(end),
       description: schedule.description || '',
       type: schedule.type,
+      status: schedule.status || 'pending',
     });
     setIsEditing(true);
+  };
+
+  const handleHourSlotClick = (hour: number) => {
+    const start = `${pad(hour)}:00`;
+    const nextHour = Math.min(hour + 1, 23);
+    const end = hour === 23 ? '23:59' : `${pad(nextHour)}:00`;
+    setEditor((prev) => ({
+      ...prev,
+      date: selectedDate,
+      start,
+      end,
+      title: isEditing ? prev.title : prev.title,
+    }));
+    if (isEditing) {
+      setIsEditing(false);
+      setEditor((prev) => ({ ...defaultEditor(selectedDate), start, end }));
+    }
   };
 
   const handleDelete = async (schedule: Schedule) => {
@@ -210,6 +317,26 @@ export default function SchedulePage() {
       }
     } catch (error: any) {
       showToast(error?.message || '일정 삭제에 실패했습니다', 'error');
+    }
+  };
+
+  const handleQuickCycleStatus = async (schedule: Schedule) => {
+    const currentStatus = (schedule.status || 'pending') as ScheduleStatus;
+    const currentIndex = statusCycle.indexOf(currentStatus);
+    const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+
+    try {
+      await updateSchedule.mutateAsync({
+        id: schedule.id,
+        data: { status: nextStatus },
+      });
+      showToast(t(`status.${nextStatus}`), 'success');
+
+      if (editor.id === schedule.id) {
+        setEditor((prev) => ({ ...prev, status: nextStatus }));
+      }
+    } catch (error: any) {
+      showToast(error?.message || '상태 변경에 실패했습니다', 'error');
     }
   };
 
@@ -256,9 +383,96 @@ export default function SchedulePage() {
         <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-gray-400">선택 날짜</p>
           <p className="mt-1 text-sm font-semibold text-gray-900">{selectedDateLabel}</p>
-          <p className="text-sm text-gray-500">총 {sortedSchedules.length}개 일정</p>
+          <p className="text-sm text-gray-500">
+            필터 결과 {sortedSchedules.length}개 일정 · 완료율 {scheduleStats.completionRate}%
+          </p>
         </div>
       </div>
+
+      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-8">
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+            <p className="text-xs text-gray-500">전체</p>
+            <p className="mt-1 text-lg font-semibold text-gray-900">{scheduleStats.total}</p>
+          </div>
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
+            <p className="text-xs text-indigo-700">카드 연결</p>
+            <p className="mt-1 text-lg font-semibold text-indigo-900">{scheduleStats.linked}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p className="text-xs text-slate-600">직접 생성</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">{scheduleStats.manual}</p>
+          </div>
+          <div className="rounded-xl border border-red-100 bg-red-50 p-3">
+            <p className="text-xs text-red-700">시간 충돌</p>
+            <p className="mt-1 text-lg font-semibold text-red-900">{scheduleStats.conflicts}</p>
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-white p-3">
+            <p className="text-xs text-gray-500">대기</p>
+            <p className="mt-1 text-lg font-semibold text-gray-900">{scheduleStats.pending}</p>
+          </div>
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+            <p className="text-xs text-blue-700">진행</p>
+            <p className="mt-1 text-lg font-semibold text-blue-900">{scheduleStats.inProgress}</p>
+          </div>
+          <div className="rounded-xl border border-green-100 bg-green-50 p-3">
+            <p className="text-xs text-green-700">완료</p>
+            <p className="mt-1 text-lg font-semibold text-green-900">{scheduleStats.completed}</p>
+          </div>
+          <div className="col-span-2 lg:col-span-8 rounded-xl border border-gray-100 bg-white p-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="제목/설명/카드 제목 검색"
+                className="sm:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setLinkedFilter('all');
+                  setTypeFilter('all');
+                }}
+                className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                필터 초기화
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(['all', 'linked', 'manual'] as LinkedFilter[]).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setLinkedFilter(filter)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                    linkedFilter === filter
+                      ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 bg-white text-gray-600'
+                  }`}
+                >
+                  {filter === 'all' ? '전체' : filter === 'linked' ? '카드 연결만' : '직접 생성만'}
+                </button>
+              ))}
+              {(['all', 'event', 'deadline', 'reminder', 'milestone'] as TypeFilter[]).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setTypeFilter(filter)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                    typeFilter === filter
+                      ? 'border-gray-300 bg-gray-900 text-white'
+                      : 'border-gray-200 bg-white text-gray-600'
+                  }`}
+                >
+                  {filter === 'all' ? '유형 전체' : typeLabels[filter]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.1fr_1.4fr]">
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -304,6 +518,26 @@ export default function SchedulePage() {
                     }`}
                   >
                     {typeLabels[type]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">상태</label>
+              <div className="flex flex-wrap gap-2">
+                {statusCycle.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setEditor((prev) => ({ ...prev, status }))}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium border ${
+                      editor.status === status
+                        ? statusColors[status]
+                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {t(`status.${status}`)}
                   </button>
                 ))}
               </div>
@@ -395,6 +629,13 @@ export default function SchedulePage() {
               />
               <button
                 type="button"
+                onClick={goToday}
+                className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700 hover:bg-blue-100"
+              >
+                오늘
+              </button>
+              <button
+                type="button"
                 onClick={() => goDate(1)}
                 className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
@@ -411,43 +652,90 @@ export default function SchedulePage() {
             <div className="max-h-[560px] overflow-y-auto rounded-xl border border-gray-100">
               {hourlyRows.map((row) => (
                 <div key={row.hour} className="grid grid-cols-[68px_1fr] border-b border-gray-100 last:border-b-0">
-                  <div className="bg-gray-50 px-3 py-3 text-xs font-medium text-gray-500">
+                  <button
+                    type="button"
+                    onClick={() => handleHourSlotClick(row.hour)}
+                    className={`bg-gray-50 px-3 py-3 text-left text-xs font-medium text-gray-500 hover:bg-blue-50 ${
+                      new Date().toDateString() === new Date(`${selectedDate}T00:00:00`).toDateString() &&
+                      new Date().getHours() === row.hour ? 'text-blue-700 bg-blue-50' : ''
+                    }`}
+                  >
                     {pad(row.hour)}:00
-                  </div>
+                  </button>
                   <div className="min-h-14 px-3 py-2">
                     {row.items.length === 0 ? (
-                      <div className="h-full rounded-md border border-dashed border-gray-100" />
+                      <button
+                        type="button"
+                        onClick={() => handleHourSlotClick(row.hour)}
+                        className="h-full w-full rounded-md border border-dashed border-gray-100 hover:border-blue-200 hover:bg-blue-50/40"
+                      />
                     ) : (
                       <div className="space-y-2">
                         {row.items.map((schedule) => {
                           const start = new Date(schedule.startTime);
                           const end = new Date(schedule.endTime);
                           const linked = !!schedule.cardId;
+                          const isConflict = conflictIds.has(schedule.id);
+                          const status = schedule.status || 'pending';
+                          const isCompleted = status === 'completed';
                           return (
                             <button
                               key={schedule.id}
                               type="button"
                               onClick={() => startEdit(schedule)}
-                              className="w-full rounded-lg border border-gray-200 bg-white p-2 text-left hover:bg-gray-50"
+                              className={`w-full rounded-lg border p-2 text-left transition ${
+                                isConflict
+                                  ? 'border-red-200 ring-1 ring-red-100'
+                                  : 'border-gray-200'
+                              } ${
+                                isCompleted
+                                  ? 'bg-gray-50/80 opacity-80 hover:bg-gray-100'
+                                  : 'bg-white hover:bg-gray-50'
+                              }`}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <p className="truncate text-sm font-medium text-gray-900">
+                                    <p className={`truncate text-sm font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                                       {schedule.title}
                                     </p>
                                     <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${typeColors[schedule.type]}`}>
                                       {typeLabels[schedule.type as EditorState['type']]}
                                     </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleQuickCycleStatus(schedule);
+                                      }}
+                                      disabled={updateSchedule.isPending}
+                                      title="클릭하여 상태 변경 (대기→진행→완료)"
+                                      className={`rounded-full border px-2 py-0.5 text-[11px] font-medium transition hover:brightness-95 disabled:opacity-50 ${statusColors[status]}`}
+                                    >
+                                      {t(`status.${status}`)}
+                                    </button>
                                     {linked && (
                                       <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
                                         카드 연결
+                                      </span>
+                                    )}
+                                    {isConflict && (
+                                      <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
+                                        시간 충돌
                                       </span>
                                     )}
                                   </div>
                                   <p className="mt-1 text-xs text-gray-500">
                                     {formatTime(start)} - {formatTime(end)}
                                   </p>
+                                  <p className="mt-0.5 text-xs text-gray-400">
+                                    소요 {formatDurationMinutes(schedule.startTime, schedule.endTime)}
+                                  </p>
+                                  {schedule.card?.title && (
+                                    <p className="mt-1 text-xs text-indigo-700 truncate">
+                                      연결 카드: {schedule.card.title}
+                                    </p>
+                                  )}
                                   {schedule.description && (
                                     <p className="mt-1 line-clamp-2 text-xs text-gray-600">
                                       {schedule.description}

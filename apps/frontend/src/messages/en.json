@@ -44,7 +44,12 @@
     "add": "Add schedule",
     "demoMeeting": "Team meeting",
     "demoDeadline": "Project A deadline",
-    "demoReview": "Code review"
+    "demoReview": "Code review",
+    "status": {
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "completed": "Completed"
+    }
   },
   "auth": {
     "loginTitle": "Log in",
@@ -236,6 +241,77 @@
         "saved": "Profile updated.",
         "failed": "Failed to update profile."
       }
+    },
+    "notificationCenter": {
+      "title": "Notification channels & reminder settings",
+      "badge": "Frontend UI draft",
+      "description": "Control which channels receive schedule completion follow-up reminders and when they are sent. This is currently a browser/local draft UI.",
+      "actions": {
+        "save": "Save settings",
+        "saving": "Saving..."
+      },
+      "overdue": {
+        "title": "Overdue completion follow-up reminder",
+        "description": "Notify assignees when a schedule is still not completed after a delay from its end time.",
+        "delayLabel": "Reminder delay",
+        "delayOption": "{minutes} minutes later",
+        "previewLabel": "Rule preview",
+        "previewValue": "Send a reminder if still not completed {minutes} minutes after end time"
+      },
+      "summary": {
+        "title": "Current status",
+        "browserPermission": "Browser permission",
+        "browserSubscriptions": "Stored browser subscriptions",
+        "activeChannels": "Active channels",
+        "loading": "Loading saved user notification settings...",
+        "note": "Saved settings are persisted to your account. Local browser storage is kept as a fallback draft when the API save fails."
+      },
+      "channels": {
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "email": {
+          "label": "Email",
+          "description": "Send reminders to the assignee email address."
+        },
+        "slack": {
+          "label": "Slack",
+          "description": "Future Slack integration for DM or channel reminders."
+        },
+        "webPush": {
+          "label": "Browser push",
+          "description": "Send real-time push notifications to Chrome and other browsers."
+        }
+      },
+      "browser": {
+        "title": "Browser permission & subscription",
+        "description": "After permission is granted, run sync to register this browser as a notification target.",
+        "permission": {
+          "granted": "Granted",
+          "denied": "Denied",
+          "default": "Not decided",
+          "unsupported": "Unsupported",
+          "unknown": "Checking"
+        },
+        "actions": {
+          "request": "Request permission",
+          "requesting": "Requesting...",
+          "sync": "Sync subscription",
+          "syncing": "Syncing...",
+          "refresh": "Refresh status"
+        }
+      },
+      "toast": {
+        "saved": "Notification settings saved to your account.",
+        "failed": "Failed to save notification settings. Only the local browser draft was updated.",
+        "browserUnsupported": "This browser does not support Web Push.",
+        "permissionGranted": "Browser notification permission granted.",
+        "permissionDenied": "Browser notification permission denied.",
+        "permissionDismissed": "Browser notification permission request was dismissed.",
+        "permissionFailed": "Failed to request browser notification permission.",
+        "browserSynced": "Browser push subscription synced to the server.",
+        "browserSyncFailed": "Failed to sync browser push subscription."
+      },
+      "footer": "Next: apply saved user preferences in the reminder workers, add Slack OAuth integration, and a test notification button."
     }
   }
 }

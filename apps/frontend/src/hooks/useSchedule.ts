@@ -4,12 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
 export type ScheduleType = 'event' | 'deadline' | 'reminder' | 'milestone';
+export type ScheduleStatus = 'pending' | 'in_progress' | 'completed';
 
 export interface Schedule {
   id: string;
   title: string;
   description?: string;
   type: ScheduleType;
+  status: ScheduleStatus;
   startTime: string;
   endTime: string;
   location?: string;
@@ -30,6 +32,7 @@ export interface CreateScheduleDto {
   title: string;
   description?: string;
   type?: ScheduleType;
+  status?: ScheduleStatus;
   startTime: string;
   endTime: string;
   userId: string;
@@ -42,6 +45,7 @@ export interface UpdateScheduleDto {
   title?: string;
   description?: string;
   type?: ScheduleType;
+  status?: ScheduleStatus;
   startTime?: string;
   endTime?: string;
   cardId?: string;

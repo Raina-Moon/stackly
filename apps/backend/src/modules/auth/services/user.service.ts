@@ -5,6 +5,20 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../../../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import {
+  NotificationPreferencesDto,
+  UpdateNotificationPreferencesDto,
+} from '../dto/update-notification-preferences.dto';
+
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferencesDto = {
+  overdueFollowupEnabled: true,
+  delayMinutes: 120,
+  channels: {
+    email: true,
+    slack: false,
+    webPush: true,
+  },
+};
 
 @Injectable()
 export class UserService {
@@ -139,5 +153,82 @@ export class UserService {
     qb.take(20);
 
     return qb.getMany();
+  }
+
+  getNotificationPreferences(user: User): NotificationPreferencesDto {
+    const raw =
+      user.notificationPreferences && typeof user.notificationPreferences === 'object'
+        ? (user.notificationPreferences as Record<string, unknown>)
+        : {};
+
+    const rawChannels =
+      raw.channels && typeof raw.channels === 'object'
+        ? (raw.channels as Record<string, unknown>)
+        : {};
+
+    const delayMinutes =
+      typeof raw.delayMinutes === 'number' && Number.isFinite(raw.delayMinutes)
+        ? Math.min(24 * 60, Math.max(15, Math.round(raw.delayMinutes)))
+        : DEFAULT_NOTIFICATION_PREFERENCES.delayMinutes;
+
+    return {
+      overdueFollowupEnabled:
+        typeof raw.overdueFollowupEnabled === 'boolean'
+          ? raw.overdueFollowupEnabled
+          : DEFAULT_NOTIFICATION_PREFERENCES.overdueFollowupEnabled,
+      delayMinutes,
+      channels: {
+        email:
+          typeof rawChannels.email === 'boolean'
+            ? rawChannels.email
+            : DEFAULT_NOTIFICATION_PREFERENCES.channels.email,
+        slack:
+          typeof rawChannels.slack === 'boolean'
+            ? rawChannels.slack
+            : DEFAULT_NOTIFICATION_PREFERENCES.channels.slack,
+        webPush:
+          typeof rawChannels.webPush === 'boolean'
+            ? rawChannels.webPush
+            : DEFAULT_NOTIFICATION_PREFERENCES.channels.webPush,
+      },
+    };
+  }
+
+  async getMyNotificationPreferences(id: string): Promise<NotificationPreferencesDto> {
+    const user = await this.findById(id);
+    return this.getNotificationPreferences(user);
+  }
+
+  async updateMyNotificationPreferences(
+    id: string,
+    dto: UpdateNotificationPreferencesDto,
+  ): Promise<NotificationPreferencesDto> {
+    const user = await this.findById(id);
+    const current = this.getNotificationPreferences(user);
+
+    const next: NotificationPreferencesDto = {
+      overdueFollowupEnabled:
+        typeof dto.overdueFollowupEnabled === 'boolean'
+          ? dto.overdueFollowupEnabled
+          : current.overdueFollowupEnabled,
+      delayMinutes:
+        typeof dto.delayMinutes === 'number' && Number.isFinite(dto.delayMinutes)
+          ? Math.min(24 * 60, Math.max(15, Math.round(dto.delayMinutes)))
+          : current.delayMinutes,
+      channels: {
+        email:
+          typeof dto.channels?.email === 'boolean' ? dto.channels.email : current.channels.email,
+        slack:
+          typeof dto.channels?.slack === 'boolean' ? dto.channels.slack : current.channels.slack,
+        webPush:
+          typeof dto.channels?.webPush === 'boolean'
+            ? dto.channels.webPush
+            : current.channels.webPush,
+      },
+    };
+
+    user.notificationPreferences = next as unknown as Record<string, unknown>;
+    await this.userRepository.save(user);
+    return next;
   }
 }

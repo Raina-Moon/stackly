@@ -1610,6 +1610,7 @@ __metadata:
     "@types/passport-jwt": "npm:^4.0.1"
     "@types/supertest": "npm:^2.0.12"
     "@types/uuid": "npm:^11.0.0"
+    "@types/web-push": "npm:^3"
     "@typescript-eslint/eslint-plugin": "npm:^6.0.0"
     "@typescript-eslint/parser": "npm:^6.0.0"
     bcrypt: "npm:^6.0.0"
@@ -1633,6 +1634,7 @@ __metadata:
     tsconfig-paths: "npm:^4.2.0"
     typeorm: "npm:^0.3.17"
     typescript: "npm:^5.1.3"
+    web-push: "npm:^3.6.7"
   languageName: unknown
   linkType: soft
 
@@ -2197,6 +2199,15 @@ __metadata:
   dependencies:
     uuid: "npm:*"
   checksum: 10/9f94bd34e5d220c53cc58ea9f48a0061d3bc343e29bc33a17edc705f5e21fedda21553318151f2bc227c2b2b03727bbb536da2b82a61f84d2e1ca38abc5e5c3f
+  languageName: node
+  linkType: hard
+
+"@types/web-push@npm:^3":
+  version: 3.6.4
+  resolution: "@types/web-push@npm:3.6.4"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/b7e93607c9230c9e23ee5ecd46d77d9a8ca63450a6cdc55ad59d833cdad70112231d2c9c1b6d363ffdfbccaeacfac75297634ca7567a74b638a4749d315bf098
   languageName: node
   linkType: hard
 
@@ -3018,6 +3029,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"asn1.js@npm:^5.3.0":
+  version: 5.4.1
+  resolution: "asn1.js@npm:5.4.1"
+  dependencies:
+    bn.js: "npm:^4.0.0"
+    inherits: "npm:^2.0.1"
+    minimalistic-assert: "npm:^1.0.0"
+    safer-buffer: "npm:^2.1.0"
+  checksum: 10/63d57c766f6afc81ff175bbf922626b3778d770c8b91b32cbcf672d7bf73b4198aca66c60a6427bff3aebc48feff1eab4a161f2681b7300b6c5b775a1e6fd791
+  languageName: node
+  linkType: hard
+
 "ast-types-flow@npm:^0.0.8":
   version: 0.0.8
   resolution: "ast-types-flow@npm:0.0.8"
@@ -3241,6 +3264,13 @@ __metadata:
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 10/007c7bad22c5d799c8dd49c85b47d012a1fe3045be57447721e6afbd1d5be43237af1db62e26cb9b0d9ba812d2e4ca3bac82f6d7e016b6b88de06ee25ceb96e7
+  languageName: node
+  linkType: hard
+
+"bn.js@npm:^4.0.0":
+  version: 4.12.3
+  resolution: "bn.js@npm:4.12.3"
+  checksum: 10/57ed5a055f946f3e009f1589c45a5242db07f3dddfc72e4506f0dd9d8b145f0dbee4edabc2499288f3fc338eb712fb96a1c623a2ed2bcd49781df1a64db64dd1
   languageName: node
   linkType: hard
 
@@ -5663,7 +5693,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"https-proxy-agent@npm:^7.0.1":
+"http_ece@npm:1.2.0":
+  version: 1.2.0
+  resolution: "http_ece@npm:1.2.0"
+  checksum: 10/8adced3b9fd33a9999fccba930ddc1c74d46c8c69babb9f7654128fff6ee5d09d6812860667d01f4497f60082991f204bcc4b9e4e0c2d9d456e815cf832b7674
+  languageName: node
+  linkType: hard
+
+"https-proxy-agent@npm:^7.0.0, https-proxy-agent@npm:^7.0.1":
   version: 7.0.6
   resolution: "https-proxy-agent@npm:7.0.6"
   dependencies:
@@ -5751,7 +5788,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inherits@npm:2, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.4":
+"inherits@npm:2, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.4":
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: 10/cd45e923bee15186c07fa4c89db0aace24824c482fb887b528304694b2aa6ff8a898da8657046a5dcf3e46cd6db6c61629551f9215f208d7c3f157cf9b290521
@@ -6929,7 +6966,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jws@npm:^4.0.1":
+"jws@npm:^4.0.0, jws@npm:^4.0.1":
   version: 4.0.1
   resolution: "jws@npm:4.0.1"
   dependencies:
@@ -7377,6 +7414,13 @@ __metadata:
   version: 2.1.0
   resolution: "mimic-fn@npm:2.1.0"
   checksum: 10/d2421a3444848ce7f84bd49115ddacff29c15745db73f54041edc906c14b131a38d05298dae3081667627a59b2eb1ca4b436ff2e1b80f69679522410418b478a
+  languageName: node
+  linkType: hard
+
+"minimalistic-assert@npm:^1.0.0":
+  version: 1.0.1
+  resolution: "minimalistic-assert@npm:1.0.1"
+  checksum: 10/cc7974a9268fbf130fb055aff76700d7e2d8be5f761fb5c60318d0ed010d839ab3661a533ad29a5d37653133385204c503bfac995aaa4236f4e847461ea32ba7
   languageName: node
   linkType: hard
 
@@ -9026,7 +9070,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"safer-buffer@npm:>= 2.1.2 < 3, safer-buffer@npm:>= 2.1.2 < 3.0.0":
+"safer-buffer@npm:>= 2.1.2 < 3, safer-buffer@npm:>= 2.1.2 < 3.0.0, safer-buffer@npm:^2.1.0":
   version: 2.1.2
   resolution: "safer-buffer@npm:2.1.2"
   checksum: 10/7eaf7a0cf37cc27b42fb3ef6a9b1df6e93a1c6d98c6c6702b02fe262d5fcbd89db63320793b99b21cb5348097d0a53de81bd5f4e8b86e20cc9412e3f1cfb4e83
@@ -10796,6 +10840,21 @@ __metadata:
   dependencies:
     defaults: "npm:^1.0.3"
   checksum: 10/182ebac8ca0b96845fae6ef44afd4619df6987fe5cf552fdee8396d3daa1fb9b8ec5c6c69855acb7b3c1231571393bd1f0a4cdc4028d421575348f64bb0a8817
+  languageName: node
+  linkType: hard
+
+"web-push@npm:^3.6.7":
+  version: 3.6.7
+  resolution: "web-push@npm:3.6.7"
+  dependencies:
+    asn1.js: "npm:^5.3.0"
+    http_ece: "npm:1.2.0"
+    https-proxy-agent: "npm:^7.0.0"
+    jws: "npm:^4.0.0"
+    minimist: "npm:^1.2.5"
+  bin:
+    web-push: src/cli.js
+  checksum: 10/c25f427a4d75572cb476835e4fc547b2c1b7a306c9c264d4b6aa2345ae2144a5cd49743320f3cc6df8ef3be9c52ba5c88be5a7f6f9bdb3252768f1bb9e7d1037
   languageName: node
   linkType: hard
 

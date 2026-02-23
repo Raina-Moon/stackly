@@ -116,4 +116,44 @@ export class EmailService {
   clearVerification(email: string): void {
     this.verificationCodes.delete(email);
   }
+
+  async sendEmail(params: {
+    to: string | string[];
+    subject: string;
+    html: string;
+    from?: string;
+  }): Promise<{ success: boolean; message: string; providerMessageId?: string }> {
+    const toList = Array.isArray(params.to) ? params.to : [params.to];
+
+    if (!this.resend) {
+      console.log(
+        `[DEV MODE] sendEmail => to=${toList.join(', ')} subject="${params.subject}" (Resend not configured)`,
+      );
+      return {
+        success: true,
+        message: '개발 모드: 실제 이메일 전송 없이 성공 처리',
+      };
+    }
+
+    try {
+      const result = await this.resend.emails.send({
+        from: params.from || 'Stackly <onboarding@resend.dev>',
+        to: toList,
+        subject: params.subject,
+        html: params.html,
+      });
+
+      return {
+        success: true,
+        message: '이메일 발송 성공',
+        providerMessageId: typeof result?.data?.id === 'string' ? result.data.id : undefined,
+      };
+    } catch (error) {
+      console.error('[EmailService] sendEmail failed:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '이메일 발송 실패',
+      };
+    }
+  }
 }

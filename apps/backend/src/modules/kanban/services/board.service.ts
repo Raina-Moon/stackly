@@ -6,6 +6,12 @@ import { Board } from '../../../entities/board.entity';
 import { BoardMember, BoardRole } from '../../../entities/board-member.entity';
 import { CreateBoardDto } from '../dto/create-board.dto';
 import { UpdateBoardDto } from '../dto/update-board.dto';
+import { CacheService, CacheInvalidationService } from '../../../cache';
+
+const BOARD_FULL_TTL = 60_000;       // 1 minute
+const USER_BOARDS_TTL = 120_000;     // 2 minutes
+const MEMBER_TTL = 600_000;          // 10 minutes
+const FAVORITES_TTL = 600_000;       // 10 minutes
 
 @Injectable()
 export class BoardService {
@@ -14,6 +20,8 @@ export class BoardService {
     private boardRepository: Repository<Board>,
     @InjectRepository(BoardMember)
     private boardMemberRepository: Repository<BoardMember>,
+    private readonly cacheService: CacheService,
+    private readonly cacheInvalidation: CacheInvalidationService,
   ) {}
 
   async create(createBoardDto: CreateBoardDto, ownerId: string): Promise<Board> {
@@ -38,6 +46,9 @@ export class BoardService {
     });
     await this.boardMemberRepository.save(ownerMember);
 
+    // Invalidate owner's board list
+    await this.cacheService.del(this.cacheInvalidation.userBoardsKey(ownerId));
+
     return savedBoard;
   }
 
@@ -59,6 +70,10 @@ export class BoardService {
   }
 
   async findById(id: string): Promise<Board> {
+    const cacheKey = this.cacheInvalidation.boardFullKey(id);
+    const cached = await this.cacheService.get<Board>(cacheKey);
+    if (cached) return cached;
+
     const board = await this.boardRepository.findOne({
       where: { id, deletedAt: IsNull() },
       relations: ['columns', 'cards', 'members', 'members.user', 'owner'],
@@ -73,19 +88,29 @@ export class BoardService {
       console.log(`[findById] Board ${id} cards:`, board.cards.map(c => `${c.id.slice(0,8)}→col:${c.columnId.slice(0,8)} pos:${c.position}`));
     }
 
+    await this.cacheService.set(cacheKey, board, BOARD_FULL_TTL);
     return board;
   }
 
   async update(id: string, updateBoardDto: UpdateBoardDto): Promise<Board> {
     const board = await this.findById(id);
     Object.assign(board, updateBoardDto);
-    return this.boardRepository.save(board);
+    const saved = await this.boardRepository.save(board);
+
+    const memberIds = await this.getBoardMemberIds(id);
+    await this.cacheInvalidation.onBoardContentChange(id, memberIds);
+
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
     const board = await this.findById(id);
+    const memberIds = await this.getBoardMemberIds(id);
+
     board.deletedAt = new Date();
     await this.boardRepository.save(board);
+
+    await this.cacheInvalidation.onBoardDelete(id, memberIds);
   }
 
   async findByOwner(ownerId: string): Promise<Board[]> {
@@ -130,7 +155,12 @@ export class BoardService {
       canComment: true,
     });
 
-    return this.boardMemberRepository.save(member);
+    const saved = await this.boardMemberRepository.save(member);
+
+    const allMemberIds = await this.getBoardMemberIds(board.id);
+    await this.cacheInvalidation.onBoardMemberChange(board.id, userId, allMemberIds);
+
+    return saved;
   }
 
   async regenerateInviteCode(boardId: string, userId: string): Promise<string> {
@@ -148,6 +178,8 @@ export class BoardService {
     const newInviteCode = uuidv4();
     board.inviteCode = newInviteCode;
     await this.boardRepository.save(board);
+
+    await this.cacheService.del(this.cacheInvalidation.boardFullKey(boardId));
 
     return newInviteCode;
   }
@@ -183,13 +215,23 @@ export class BoardService {
     }
 
     await this.boardMemberRepository.remove(targetMember);
+
+    const remainingMemberIds = await this.getBoardMemberIds(boardId);
+    await this.cacheInvalidation.onBoardMemberChange(boardId, targetUserId, remainingMemberIds);
   }
 
   async isMember(boardId: string, userId: string): Promise<boolean> {
+    const cacheKey = this.cacheInvalidation.boardMemberKey(boardId, userId);
+    const cached = await this.cacheService.get<boolean>(cacheKey);
+    if (cached !== undefined) return cached;
+
     const member = await this.boardMemberRepository.findOne({
       where: { boardId, userId },
     });
-    return !!member;
+    const result = !!member;
+
+    await this.cacheService.set(cacheKey, result, MEMBER_TTL);
+    return result;
   }
 
   async getMember(boardId: string, userId: string): Promise<BoardMember | null> {
@@ -210,14 +252,21 @@ export class BoardService {
   }
 
   async findUserBoards(userId: string): Promise<Board[]> {
+    const cacheKey = this.cacheInvalidation.userBoardsKey(userId);
+    const cached = await this.cacheService.get<Board[]>(cacheKey);
+    if (cached) return cached;
+
     const memberships = await this.boardMemberRepository.find({
       where: { userId },
       relations: ['board', 'board.columns', 'board.cards', 'board.owner'],
     });
 
-    return memberships
+    const boards = memberships
       .filter((m) => m.board && !m.board.deletedAt)
       .map((m) => m.board);
+
+    await this.cacheService.set(cacheKey, boards, USER_BOARDS_TTL);
+    return boards;
   }
 
   async toggleFavorite(boardId: string, userId: string): Promise<{ isFavorite: boolean }> {
@@ -232,15 +281,32 @@ export class BoardService {
     member.isFavorite = !member.isFavorite;
     await this.boardMemberRepository.save(member);
 
+    await this.cacheInvalidation.onFavoriteToggle(userId);
+
     return { isFavorite: member.isFavorite };
   }
 
   async getFavoriteIds(userId: string): Promise<string[]> {
+    const cacheKey = this.cacheInvalidation.userFavoritesKey(userId);
+    const cached = await this.cacheService.get<string[]>(cacheKey);
+    if (cached) return cached;
+
     const memberships = await this.boardMemberRepository.find({
       where: { userId, isFavorite: true },
       select: ['boardId'],
     });
 
-    return memberships.map((m) => m.boardId);
+    const ids = memberships.map((m) => m.boardId);
+    await this.cacheService.set(cacheKey, ids, FAVORITES_TTL);
+    return ids;
+  }
+
+  /** Helper: get all member user IDs for a board (for cache invalidation) */
+  async getBoardMemberIds(boardId: string): Promise<string[]> {
+    const members = await this.boardMemberRepository.find({
+      where: { boardId },
+      select: ['userId'],
+    });
+    return members.map((m) => m.userId);
   }
 }

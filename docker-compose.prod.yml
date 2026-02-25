@@ -17,6 +17,25 @@ services:
     networks:
       - stackly-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: stackly-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stackly-network
+
   backend:
     build:
       context: .
@@ -33,16 +52,22 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       PORT: 3001
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     ports:
       - "3001:3001"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - stackly-network
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   stackly-network:

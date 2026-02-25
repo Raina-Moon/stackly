@@ -34,7 +34,8 @@
       "Bash(git rev-parse:*)",
       "Bash(git -C /Users/raina/stackly add apps/backend/src/entities/board-member.entity.ts apps/backend/src/modules/kanban/controllers/board.controller.ts apps/backend/src/modules/kanban/services/board.service.ts apps/backend/src/migrations/ apps/frontend/src/app/boards/page.tsx apps/frontend/src/components/boards/BoardsGridView.tsx apps/frontend/src/components/boards/BoardsListView.tsx apps/frontend/src/components/boards/BoardsToolbar.tsx apps/frontend/src/components/boards/EditBoardModal.tsx apps/frontend/src/components/boards/index.ts apps/frontend/src/components/ui/SearchBar.tsx apps/frontend/src/components/ui/SortDropdown.tsx apps/frontend/src/hooks/useBoard.ts)",
       "Bash(git -C /Users/raina/stackly commit -m \"$\\(cat <<''EOF''\nAdd quick actions and extract reusable UI components for boards page\n\n- Extract SearchBar and SortDropdown as reusable UI components\n- Add EditBoardModal for editing board name, description, and color\n- Add archive/unarchive functionality for board owners\n- Add copy invite link button with clipboard support\n- Add favorite/star boards feature with backend support\n- Update BoardsToolbar to use extracted components\n- Add favorites filter option and sort favorites to top\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git -C /Users/raina/stackly status)"
+      "Bash(git -C /Users/raina/stackly status)",
+      "Bash(npx nest build)"
     ]
   }
 }

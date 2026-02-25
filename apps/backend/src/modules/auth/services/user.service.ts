@@ -2,6 +2,7 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import { User } from '../../../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -9,6 +10,7 @@ import {
   NotificationPreferencesDto,
   UpdateNotificationPreferencesDto,
 } from '../dto/update-notification-preferences.dto';
+import { CacheService, CacheInvalidationService } from '../../../cache';
 
 const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferencesDto = {
   overdueFollowupEnabled: true,
@@ -25,6 +27,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private readonly cacheService: CacheService,
+    private readonly cacheInvalidation: CacheInvalidationService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -88,6 +92,13 @@ export class UserService {
     return user;
   }
 
+  async findByIdMinimal(id: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+      select: ['id', 'email', 'nickname', 'isActive'],
+    });
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { email, deletedAt: IsNull() },
@@ -118,18 +129,23 @@ export class UserService {
     }
 
     Object.assign(user, updateUserDto);
-    return this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    await this.cacheInvalidation.onUserProfileChange(id);
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
     const user = await this.findById(id);
     user.deletedAt = new Date();
     await this.userRepository.save(user);
+    await this.cacheInvalidation.onUserProfileChange(id);
   }
 
   async updateLastLogin(id: string): Promise<void> {
     await this.userRepository.update(id, { lastLoginAt: new Date() });
   }
+
+  private static readonly SEARCH_TTL = 120_000; // 2 minutes
 
   async search(query: string, excludeUserId?: string): Promise<User[]> {
     if (!query || query.trim().length < 2) {
@@ -137,6 +153,14 @@ export class UserService {
     }
 
     const searchQuery = query.trim().toLowerCase();
+
+    // Cache key based on query hash + excludeUserId
+    const raw = `${searchQuery}:${excludeUserId ?? ''}`;
+    const hash = createHash('md5').update(raw).digest('hex');
+    const cacheKey = this.cacheInvalidation.userSearchKey(hash);
+
+    const cached = await this.cacheService.get<User[]>(cacheKey);
+    if (cached) return cached;
 
     const qb = this.userRepository.createQueryBuilder('user');
     qb.where('user.deletedAt IS NULL');
@@ -152,7 +176,9 @@ export class UserService {
     qb.orderBy('user.nickname', 'ASC');
     qb.take(20);
 
-    return qb.getMany();
+    const results = await qb.getMany();
+    await this.cacheService.set(cacheKey, results, UserService.SEARCH_TTL);
+    return results;
   }
 
   getNotificationPreferences(user: User): NotificationPreferencesDto {

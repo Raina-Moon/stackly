@@ -4,17 +4,30 @@ import { Repository, IsNull } from 'typeorm';
 import { Card } from '../../../entities/card.entity';
 import { CreateCardDto } from '../dto/create-card.dto';
 import { UpdateCardDto } from '../dto/update-card.dto';
+import { CacheInvalidationService } from '../../../cache';
+import { BoardService } from './board.service';
 
 @Injectable()
 export class CardService {
   constructor(
     @InjectRepository(Card)
     private cardRepository: Repository<Card>,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly boardService: BoardService,
   ) {}
+
+  private async invalidateBoardCache(boardId: string): Promise<void> {
+    const memberIds = await this.boardService.getBoardMemberIds(boardId);
+    await this.cacheInvalidation.onBoardContentChange(boardId, memberIds);
+  }
 
   async create(createCardDto: CreateCardDto): Promise<Card> {
     const card = this.cardRepository.create(createCardDto);
-    return this.cardRepository.save(card);
+    const saved = await this.cardRepository.save(card);
+    if (saved.boardId) {
+      await this.invalidateBoardCache(saved.boardId);
+    }
+    return saved;
   }
 
   async findAll(columnId: string): Promise<Card[]> {
@@ -41,13 +54,21 @@ export class CardService {
   async update(id: string, updateCardDto: UpdateCardDto): Promise<Card> {
     const card = await this.findById(id);
     Object.assign(card, updateCardDto);
-    return this.cardRepository.save(card);
+    const saved = await this.cardRepository.save(card);
+    if (saved.boardId) {
+      await this.invalidateBoardCache(saved.boardId);
+    }
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
     const card = await this.findById(id);
+    const boardId = card.boardId;
     card.deletedAt = new Date();
     await this.cardRepository.save(card);
+    if (boardId) {
+      await this.invalidateBoardCache(boardId);
+    }
   }
 
   async findByBoard(boardId: string): Promise<Card[]> {
@@ -78,6 +99,10 @@ export class CardService {
     console.log(`[moveCard] UPDATE result: affected=${result.affected}`);
     const after = await this.findById(cardId);
     console.log(`[moveCard] AFTER: card=${cardId}, columnId=${after.columnId}, position=${after.position}`);
+
+    if (after.boardId) {
+      await this.invalidateBoardCache(after.boardId);
+    }
     return after;
   }
 
@@ -90,6 +115,11 @@ export class CardService {
       return card;
     });
 
-    return this.cardRepository.save(updatedCards);
+    const saved = await this.cardRepository.save(updatedCards);
+
+    if (saved.length > 0 && saved[0].boardId) {
+      await this.invalidateBoardCache(saved[0].boardId);
+    }
+    return saved;
   }
 }

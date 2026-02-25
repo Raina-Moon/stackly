@@ -16,10 +16,17 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { UpdateNotificationPreferencesDto } from '../dto/update-notification-preferences.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser, AuthUser } from '../decorators/get-user.decorator';
+import { CacheService, CacheInvalidationService } from '../../../cache';
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  private static readonly PROFILE_TTL = 600_000; // 10 minutes
+
+  constructor(
+    private readonly userService: UserService,
+    private readonly cacheService: CacheService,
+    private readonly cacheInvalidation: CacheInvalidationService,
+  ) {}
 
   @Get('search')
   @UseGuards(JwtAuthGuard)
@@ -47,8 +54,13 @@ export class UserController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getMe(@GetUser() authUser: AuthUser) {
+    const cacheKey = this.cacheInvalidation.userProfileKey(authUser.id);
+    const cached = await this.cacheService.get<Record<string, unknown>>(cacheKey);
+    if (cached) return cached;
+
     const user = await this.userService.findById(authUser.id);
     const { password, ...result } = user;
+    await this.cacheService.set(cacheKey, result, UserController.PROFILE_TTL);
     return result;
   }
 

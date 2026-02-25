@@ -14,6 +14,7 @@ import { Friend } from './entities/friend.entity';
 import { NotificationEvent } from './entities/notification-event.entity';
 import { NotificationDelivery } from './entities/notification-delivery.entity';
 import { WebPushSubscriptionEntity } from './entities/web-push-subscription.entity';
+import { RedisCacheModule } from './cache';
 import { AuthModule } from './modules/auth/auth.module';
 import { KanbanModule } from './modules/kanban/kanban.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
@@ -97,6 +98,7 @@ import { FriendsModule } from './modules/friends/friends.module';
         };
       },
     }),
+    RedisCacheModule,
     AuthModule,
     KanbanModule,
     SchedulesModule,

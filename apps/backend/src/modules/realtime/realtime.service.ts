@@ -3,11 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BoardMember } from '../../entities/board-member.entity';
 import { UserPresence } from './dto/socket-events.dto';
+import { CacheService, CacheInvalidationService } from '../../cache';
 
 interface BoardRoom {
   users: Map<string, UserPresence>;
   voiceUsers: Set<string>;
 }
+
+const MEMBER_TTL = 600_000; // 10 minutes
 
 @Injectable()
 export class RealtimeService {
@@ -19,13 +22,22 @@ export class RealtimeService {
   constructor(
     @InjectRepository(BoardMember)
     private boardMemberRepository: Repository<BoardMember>,
+    private readonly cacheService: CacheService,
+    private readonly cacheInvalidation: CacheInvalidationService,
   ) {}
 
   async canAccessBoard(boardId: string, userId: string): Promise<boolean> {
+    const cacheKey = this.cacheInvalidation.boardMemberKey(boardId, userId);
+    const cached = await this.cacheService.get<boolean>(cacheKey);
+    if (cached !== undefined) return cached;
+
     const member = await this.boardMemberRepository.findOne({
       where: { boardId, userId },
     });
-    return !!member;
+    const result = !!member;
+
+    await this.cacheService.set(cacheKey, result, MEMBER_TTL);
+    return result;
   }
 
   registerConnection(socketId: string, userId: string): void {

@@ -4,6 +4,7 @@ import { Repository, IsNull } from 'typeorm';
 import { RecurringSchedule } from '../../../entities/recurring-schedule.entity';
 import { CreateRecurringScheduleDto } from '../dto/create-recurring-schedule.dto';
 import { UpdateRecurringScheduleDto } from '../dto/update-recurring-schedule.dto';
+import { CacheService, CacheInvalidationService } from '../../../cache';
 
 // Try to load WASM module, fall back to JS if unavailable
 let wasmModule: { calculate_occurrences: (input: unknown, start: string, end: string) => { dates: string[] } } | null = null;
@@ -18,9 +19,13 @@ try {
 export class RecurringScheduleService {
   private readonly logger = new Logger(RecurringScheduleService.name);
 
+  private static readonly OCC_TTL = 3_600_000; // 1 hour
+
   constructor(
     @InjectRepository(RecurringSchedule)
     private recurringScheduleRepository: Repository<RecurringSchedule>,
+    private readonly cacheService: CacheService,
+    private readonly cacheInvalidation: CacheInvalidationService,
   ) {
     if (wasmModule) {
       this.logger.log('WASM module loaded for recurring schedule calculations');
@@ -87,10 +92,14 @@ export class RecurringScheduleService {
     startDate: Date,
     endDate: Date,
   ): Promise<Date[]> {
-    const recurring = await this.findById(id);
-
     const rangeStart = startDate.toISOString().split('T')[0];
     const rangeEnd = endDate.toISOString().split('T')[0];
+
+    const cacheKey = this.cacheInvalidation.recurringOccKey(id, rangeStart, rangeEnd);
+    const cached = await this.cacheService.get<string[]>(cacheKey);
+    if (cached) return cached.map((d) => new Date(d));
+
+    const recurring = await this.findById(id);
 
     // Use WASM if available
     if (wasmModule) {
@@ -108,11 +117,19 @@ export class RecurringScheduleService {
       };
 
       const result = wasmModule.calculate_occurrences(input, rangeStart, rangeEnd);
-      return (result.dates as string[]).map((d: string) => new Date(d));
+      const dates = (result.dates as string[]).map((d: string) => new Date(d));
+      await this.cacheService.set(cacheKey, result.dates, RecurringScheduleService.OCC_TTL);
+      return dates;
     }
 
     // JS fallback
-    return this.calculateOccurrencesJS(recurring, startDate, endDate);
+    const dates = this.calculateOccurrencesJS(recurring, startDate, endDate);
+    await this.cacheService.set(
+      cacheKey,
+      dates.map((d) => d.toISOString()),
+      RecurringScheduleService.OCC_TTL,
+    );
+    return dates;
   }
 
   private calculateOccurrencesJS(

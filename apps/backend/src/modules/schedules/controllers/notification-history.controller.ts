@@ -11,6 +11,9 @@ import { IsNull, Repository } from 'typeorm';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AuthUser, GetUser } from '../../auth/decorators/get-user.decorator';
 import { NotificationDelivery } from '../../../entities/notification-delivery.entity';
+import { CacheService, CacheInvalidationService } from '../../../cache';
+
+const NOTIF_SUMMARY_TTL = 30_000; // 30 seconds
 
 @Controller('notifications/history')
 @UseGuards(JwtAuthGuard)
@@ -18,6 +21,8 @@ export class NotificationHistoryController {
   constructor(
     @InjectRepository(NotificationDelivery)
     private readonly notificationDeliveryRepository: Repository<NotificationDelivery>,
+    private readonly cacheService: CacheService,
+    private readonly cacheInvalidation: CacheInvalidationService,
   ) {}
 
   @Get()
@@ -69,6 +74,10 @@ export class NotificationHistoryController {
 
   @Get('summary')
   async getSummary(@GetUser() user: AuthUser) {
+    const cacheKey = this.cacheInvalidation.notifSummaryKey(user.id);
+    const cached = await this.cacheService.get<Record<string, unknown>>(cacheKey);
+    if (cached) return cached;
+
     const unreadCount = await this.notificationDeliveryRepository.count({
       where: { userId: user.id, readAt: IsNull() },
     });
@@ -79,7 +88,7 @@ export class NotificationHistoryController {
       select: ['id', 'createdAt', 'status', 'channel'],
     });
 
-    return {
+    const result = {
       success: true,
       unreadCount,
       hasUnread: unreadCount > 0,
@@ -92,6 +101,9 @@ export class NotificationHistoryController {
           }
         : null,
     };
+
+    await this.cacheService.set(cacheKey, result, NOTIF_SUMMARY_TTL);
+    return result;
   }
 
   @Patch('read-all')
@@ -104,6 +116,8 @@ export class NotificationHistoryController {
       .where('"userId" = :userId', { userId: user.id })
       .andWhere('"readAt" IS NULL')
       .execute();
+
+    await this.cacheInvalidation.onNotificationChange(user.id);
 
     return {
       success: true,
@@ -122,6 +136,8 @@ export class NotificationHistoryController {
       .andWhere('"userId" = :userId', { userId: user.id })
       .andWhere('"readAt" IS NULL')
       .execute();
+
+    await this.cacheInvalidation.onNotificationChange(user.id);
 
     return {
       success: true,

@@ -11,6 +11,7 @@ import { User } from '../../../entities/user.entity';
 import { EmailService } from '../../auth/email.service';
 import { WebPushSubscriptionEntity } from '../../../entities/web-push-subscription.entity';
 import { WebPushSubscriptionService } from './web-push-subscription.service';
+import { CacheInvalidationService } from '../../../cache';
 
 @Injectable()
 export class NotificationDeliveryProcessorService implements OnModuleInit, OnModuleDestroy {
@@ -30,6 +31,7 @@ export class NotificationDeliveryProcessorService implements OnModuleInit, OnMod
     private readonly emailService: EmailService,
     private readonly webPushSubscriptionService: WebPushSubscriptionService,
     private readonly configService: ConfigService,
+    private readonly cacheInvalidation: CacheInvalidationService,
   ) {}
 
   onModuleInit() {
@@ -90,14 +92,21 @@ export class NotificationDeliveryProcessorService implements OnModuleInit, OnMod
         try {
           if (fresh.channel === NotificationChannel.EMAIL) {
             const emailSent = await this.handleEmailDelivery(fresh);
-            if (emailSent) sentCount += 1;
+            if (emailSent) {
+              sentCount += 1;
+              await this.cacheInvalidation.onNotificationChange(fresh.userId);
+            }
             continue;
           }
 
           if (fresh.channel === NotificationChannel.WEB_PUSH) {
             const webPushSent = await this.handleWebPushDelivery(fresh);
-            if (webPushSent) sentCount += 1;
-            else skippedCount += 1;
+            if (webPushSent) {
+              sentCount += 1;
+              await this.cacheInvalidation.onNotificationChange(fresh.userId);
+            } else {
+              skippedCount += 1;
+            }
             continue;
           }
 

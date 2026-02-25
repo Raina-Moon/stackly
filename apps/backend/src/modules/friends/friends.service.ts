@@ -9,6 +9,7 @@ import { Repository, Not, In, IsNull } from 'typeorm';
 import { Friend, FriendshipStatus } from '../../entities/friend.entity';
 import { User } from '../../entities/user.entity';
 import { BoardMember } from '../../entities/board-member.entity';
+import { CacheService, CacheInvalidationService } from '../../cache';
 
 export interface ContactUser {
   id: string;
@@ -21,6 +22,10 @@ export interface ContactUser {
   isCollaborator: boolean;
 }
 
+const FRIENDS_TTL = 300_000;        // 5 minutes
+const COLLABORATORS_TTL = 300_000;  // 5 minutes
+const CONTACTS_TTL = 300_000;       // 5 minutes
+
 @Injectable()
 export class FriendsService {
   constructor(
@@ -30,6 +35,8 @@ export class FriendsService {
     private userRepository: Repository<User>,
     @InjectRepository(BoardMember)
     private boardMemberRepository: Repository<BoardMember>,
+    private readonly cacheService: CacheService,
+    private readonly cacheInvalidation: CacheInvalidationService,
   ) {}
 
   async sendFriendRequest(requesterId: string, addresseeId: string): Promise<Friend> {
@@ -63,7 +70,9 @@ export class FriendsService {
         } else {
           // The other person already sent a request, auto-accept
           existingRequest.status = FriendshipStatus.ACCEPTED;
-          return this.friendRepository.save(existingRequest);
+          const saved = await this.friendRepository.save(existingRequest);
+          await this.cacheInvalidation.onFriendshipChange(requesterId, addresseeId);
+          return saved;
         }
       }
       if (existingRequest.status === FriendshipStatus.REJECTED) {
@@ -102,7 +111,9 @@ export class FriendsService {
     }
 
     request.status = FriendshipStatus.ACCEPTED;
-    return this.friendRepository.save(request);
+    const saved = await this.friendRepository.save(request);
+    await this.cacheInvalidation.onFriendshipChange(request.requesterId, request.addresseeId);
+    return saved;
   }
 
   async rejectFriendRequest(requestId: string, userId: string): Promise<Friend> {
@@ -123,7 +134,9 @@ export class FriendsService {
     }
 
     request.status = FriendshipStatus.REJECTED;
-    return this.friendRepository.save(request);
+    const saved = await this.friendRepository.save(request);
+    await this.cacheInvalidation.onFriendshipChange(request.requesterId, request.addresseeId);
+    return saved;
   }
 
   async removeFriend(userId: string, friendUserId: string): Promise<void> {
@@ -139,9 +152,14 @@ export class FriendsService {
     }
 
     await this.friendRepository.remove(friendship);
+    await this.cacheInvalidation.onFriendshipChange(userId, friendUserId);
   }
 
   async getFriends(userId: string): Promise<ContactUser[]> {
+    const cacheKey = this.cacheInvalidation.userFriendsKey(userId);
+    const cached = await this.cacheService.get<ContactUser[]>(cacheKey);
+    if (cached) return cached;
+
     const friendships = await this.friendRepository.find({
       where: [
         { requesterId: userId, status: FriendshipStatus.ACCEPTED },
@@ -153,7 +171,7 @@ export class FriendsService {
     const collaboratorIds = await this.getCollaboratorIds(userId);
     const collaboratorSet = new Set(collaboratorIds);
 
-    return friendships.map((f) => {
+    const result = friendships.map((f) => {
       const friend = f.requesterId === userId ? f.addressee : f.requester;
       return {
         id: friend.id,
@@ -166,9 +184,16 @@ export class FriendsService {
         isCollaborator: collaboratorSet.has(friend.id),
       };
     });
+
+    await this.cacheService.set(cacheKey, result, FRIENDS_TTL);
+    return result;
   }
 
   async getCollaborators(userId: string): Promise<ContactUser[]> {
+    const cacheKey = this.cacheInvalidation.userCollaboratorsKey(userId);
+    const cached = await this.cacheService.get<ContactUser[]>(cacheKey);
+    if (cached) return cached;
+
     // Get all boards the user is a member of
     const userMemberships = await this.boardMemberRepository.find({
       where: { userId },
@@ -176,6 +201,7 @@ export class FriendsService {
     });
 
     if (userMemberships.length === 0) {
+      await this.cacheService.set(cacheKey, [], COLLABORATORS_TTL);
       return [];
     }
 
@@ -202,7 +228,7 @@ export class FriendsService {
     const friendIds = await this.getFriendIds(userId);
     const friendSet = new Set(friendIds);
 
-    return Array.from(userMap.values()).map((user) => ({
+    const result = Array.from(userMap.values()).map((user) => ({
       id: user.id,
       email: user.email,
       nickname: user.nickname,
@@ -212,9 +238,16 @@ export class FriendsService {
       isFriend: friendSet.has(user.id),
       isCollaborator: true,
     }));
+
+    await this.cacheService.set(cacheKey, result, COLLABORATORS_TTL);
+    return result;
   }
 
   async getAllContacts(userId: string): Promise<ContactUser[]> {
+    const cacheKey = this.cacheInvalidation.userContactsKey(userId);
+    const cached = await this.cacheService.get<ContactUser[]>(cacheKey);
+    if (cached) return cached;
+
     const friends = await this.getFriends(userId);
     const collaborators = await this.getCollaborators(userId);
 
@@ -233,7 +266,9 @@ export class FriendsService {
       }
     });
 
-    return Array.from(contactMap.values());
+    const result = Array.from(contactMap.values());
+    await this.cacheService.set(cacheKey, result, CONTACTS_TTL);
+    return result;
   }
 
   async getIncomingRequests(userId: string): Promise<Array<Friend & { requester: User }>> {

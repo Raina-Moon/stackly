@@ -23,6 +23,7 @@
     "schema:sync": "yarn run typeorm schema:sync"
   },
   "dependencies": {
+    "@nestjs/cache-manager": "^2.2.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",
@@ -35,6 +36,8 @@
     "@stackly/proto": "workspace:*",
     "@stackly/wasm": "workspace:*",
     "bcrypt": "^6.0.0",
+    "cache-manager": "^5.4.0",
+    "cache-manager-redis-yet": "^5.1.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.11.3",

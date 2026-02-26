@@ -245,8 +245,8 @@
     },
     "notificationCenter": {
       "title": "알림 채널 및 리마인더 설정",
-      "badge": "프론트 UI 초안",
-      "description": "스케줄 완료 확인 리마인더를 어떤 채널로, 언제 보낼지 설정합니다. 현재는 브라우저/로컬 임시 저장 중심 UI입니다.",
+      "badge": "리마인더 채널 설정",
+      "description": "스케줄 완료 확인 리마인더를 어떤 채널로, 언제 보낼지 설정합니다. 이메일/브라우저 알림은 바로 사용 가능하고, Slack은 봇 토큰 + 채널 ID 기반 MVP로 동작합니다.",
       "actions": {
         "save": "설정 저장",
         "saving": "저장 중..."
@@ -284,12 +284,21 @@
         },
         "slack": {
           "label": "Slack",
-          "description": "추후 Slack 연동 후 DM 또는 채널 알림을 발송합니다."
+          "description": "Slack 봇이 지정한 채널로 리마인더 메시지를 전송합니다."
         },
         "webPush": {
           "label": "브라우저 알림",
           "description": "Chrome 등 브라우저 Push 알림으로 바로 알려줍니다."
         }
+      },
+      "slack": {
+        "title": "Slack 채널 연결 (MVP)",
+        "description": "서버에 Slack Bot Token이 설정되어 있어야 하며, 여기에 알림을 보낼 채널 ID를 저장합니다.",
+        "channelIdLabel": "Slack 채널 ID",
+        "channelIdHelp": "예: C0123456789 또는 비공개 채널은 G0123456789. 채널 이름(#general)이 아니라 ID를 입력하세요.",
+        "clearChannel": "채널 ID 제거",
+        "channelRequired": "Slack 토글을 켜려면 먼저 채널 ID를 입력하세요.",
+        "channelConfigured": "Slack 채널 ID가 설정되었습니다."
       },
       "browser": {
         "title": "브라우저 알림 권한 및 구독",
@@ -323,7 +332,7 @@
         "testQueuedWithChannels": "테스트 알림이 {count}개 채널로 전송 처리되었습니다.",
         "testFailed": "테스트 알림 전송에 실패했습니다."
       },
-      "footer": "다음 단계: 저장된 사용자 설정을 실제 리마인더 워커 조건/채널 선택에 반영하고, Slack OAuth 및 테스트 알림 보내기 버튼을 추가"
+      "footer": "다음 단계: Slack OAuth 설치/워크스페이스 연결, 채널 선택 UI(목록 조회), 보드별/사용자별 알림 라우팅"
     }
   },
   "notificationsPage": {

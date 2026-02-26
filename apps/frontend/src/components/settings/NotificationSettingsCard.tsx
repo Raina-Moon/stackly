@@ -12,6 +12,7 @@ type BrowserPermissionState = NotificationPermission | 'unsupported' | 'unknown'
 interface NotificationPrefsDraft {
   overdueFollowupEnabled: boolean;
   delayMinutes: number;
+  slackChannelId: string | null;
   channels: Record<NotificationChannelKey, boolean>;
 }
 
@@ -38,6 +39,7 @@ const STORAGE_KEY = 'stackly_notification_prefs_draft_v1';
 const DEFAULT_NOTIFICATION_PREFS: NotificationPrefsDraft = {
   overdueFollowupEnabled: true,
   delayMinutes: 120,
+  slackChannelId: null,
   channels: {
     email: true,
     slack: false,
@@ -56,6 +58,12 @@ function normalizePrefs(
         : base.overdueFollowupEnabled,
     delayMinutes:
       typeof input?.delayMinutes === 'number' ? input.delayMinutes : base.delayMinutes,
+    slackChannelId:
+      typeof input?.slackChannelId === 'string'
+        ? input.slackChannelId.trim() || null
+        : input?.slackChannelId === null
+          ? null
+          : base.slackChannelId,
     channels: {
       email:
         typeof input?.channels?.email === 'boolean' ? input.channels.email : base.channels.email,
@@ -262,10 +270,11 @@ export default function NotificationSettingsCard() {
             ? t('browser.permission.unsupported')
             : t('browser.permission.unknown');
 
-  const visibleChannels: NotificationChannelKey[] = ['email', 'webPush'];
+  const visibleChannels: NotificationChannelKey[] = ['email', 'slack', 'webPush'];
   const isDirty = useMemo(() => {
     return JSON.stringify(prefs) !== JSON.stringify(lastSyncedPrefs);
   }, [prefs, lastSyncedPrefs]);
+  const hasSlackChannelId = !!prefs.slackChannelId?.trim();
 
   return (
     <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -349,6 +358,7 @@ export default function NotificationSettingsCard() {
               </div>
               <Toggle
                 checked={prefs.channels[channel]}
+                disabled={channel === 'slack' && !hasSlackChannelId}
                 onChange={(checked) =>
                   setPrefs((prev) => ({
                     ...prev,
@@ -368,8 +378,67 @@ export default function NotificationSettingsCard() {
                 {prefs.channels[channel] ? t('channels.enabled') : t('channels.disabled')}
               </span>
             </div>
+
+            {channel === 'slack' && (
+              <p className="mt-2 text-xs text-gray-500">
+                {hasSlackChannelId ? t('slack.channelConfigured') : t('slack.channelRequired')}
+              </p>
+            )}
           </div>
         ))}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/60 p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-violet-900">{t('slack.title')}</p>
+            <p className="mt-1 text-sm text-violet-700">{t('slack.description')}</p>
+          </div>
+          <span className="inline-flex items-center rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700">
+            MVP
+          </span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-violet-900">
+              {t('slack.channelIdLabel')}
+            </span>
+            <input
+              type="text"
+              value={prefs.slackChannelId || ''}
+              onChange={(e) =>
+                setPrefs((prev) => ({
+                  ...prev,
+                  slackChannelId: e.target.value.trim() || null,
+                  channels: {
+                    ...prev.channels,
+                    slack:
+                      e.target.value.trim().length > 0 ? prev.channels.slack : false,
+                  },
+                }))
+              }
+              placeholder="C0123456789"
+              className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            />
+            <p className="mt-1 text-xs text-violet-700/80">{t('slack.channelIdHelp')}</p>
+          </label>
+
+          <button
+            type="button"
+            onClick={() =>
+              setPrefs((prev) => ({
+                ...prev,
+                slackChannelId: null,
+                channels: { ...prev.channels, slack: false },
+              }))
+            }
+            disabled={!hasSlackChannelId}
+            className="self-end rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {t('slack.clearChannel')}
+          </button>
+        </div>
       </div>
 
       <details className="mt-4 group rounded-xl border border-blue-100 bg-blue-50/60 p-4">

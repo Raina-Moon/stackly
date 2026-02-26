@@ -15,6 +15,7 @@ import { CacheService, CacheInvalidationService } from '../../../cache';
 const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferencesDto = {
   overdueFollowupEnabled: true,
   delayMinutes: 120,
+  slackChannelId: null,
   channels: {
     email: true,
     slack: false,
@@ -196,6 +197,10 @@ export class UserService {
       typeof raw.delayMinutes === 'number' && Number.isFinite(raw.delayMinutes)
         ? Math.min(24 * 60, Math.max(15, Math.round(raw.delayMinutes)))
         : DEFAULT_NOTIFICATION_PREFERENCES.delayMinutes;
+    const slackChannelId =
+      typeof raw.slackChannelId === 'string' && raw.slackChannelId.trim().length > 0
+        ? raw.slackChannelId.trim().slice(0, 100)
+        : DEFAULT_NOTIFICATION_PREFERENCES.slackChannelId;
 
     return {
       overdueFollowupEnabled:
@@ -203,6 +208,7 @@ export class UserService {
           ? raw.overdueFollowupEnabled
           : DEFAULT_NOTIFICATION_PREFERENCES.overdueFollowupEnabled,
       delayMinutes,
+      slackChannelId,
       channels: {
         email:
           typeof rawChannels.email === 'boolean'
@@ -241,6 +247,12 @@ export class UserService {
         typeof dto.delayMinutes === 'number' && Number.isFinite(dto.delayMinutes)
           ? Math.min(24 * 60, Math.max(15, Math.round(dto.delayMinutes)))
           : current.delayMinutes,
+      slackChannelId:
+        typeof dto.slackChannelId === 'string'
+          ? dto.slackChannelId.trim().slice(0, 100) || null
+          : dto.slackChannelId === null
+            ? null
+            : current.slackChannelId,
       channels: {
         email:
           typeof dto.channels?.email === 'boolean' ? dto.channels.email : current.channels.email,

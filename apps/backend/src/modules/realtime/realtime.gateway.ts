@@ -95,7 +95,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
 
     try {
-      const secret = this.configService.get<string>('JWT_SECRET') || 'stackly-jwt-secret-key';
+      const secret = this.configService.getOrThrow<string>('JWT_SECRET');
       const payload = this.jwtService.verify(token, { secret });
 
       const user = await this.userService.findById(payload.sub);

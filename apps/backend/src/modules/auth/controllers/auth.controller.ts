@@ -1,27 +1,62 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Req, Headers } from '@nestjs/common';
 import { Request } from 'express';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { EmailService } from '../email.service';
 import { UserService } from '../services/user.service';
 import { AuthService } from '../services/auth.service';
 
 class SendCodeDto {
+  @IsEmail()
   email: string;
 }
 
 class VerifyCodeDto {
+  @IsEmail()
   email: string;
+
+  @IsString()
+  @IsNotEmpty()
   code: string;
 }
 
 class CheckNicknameDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(20)
   nickname: string;
 }
 
 class RegisterDto {
+  @IsEmail()
   email: string;
+
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/, {
+    message:
+      'Password must contain uppercase, lowercase, number, and special character',
+  })
   password: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(20)
   nickname: string;
+
+  @IsString()
+  @IsNotEmpty()
   firstName: string;
+
+  @IsOptional()
+  @IsString()
   lastName?: string;
 }
 
@@ -46,15 +81,23 @@ function validatePassword(password: string): { valid: boolean; message: string }
 }
 
 class LoginDto {
+  @IsEmail()
   email: string;
+
+  @IsString()
+  @IsNotEmpty()
   password: string;
 }
 
 class RefreshDto {
+  @IsString()
+  @IsNotEmpty()
   refreshToken: string;
 }
 
 class LogoutDto {
+  @IsString()
+  @IsNotEmpty()
   refreshToken: string;
 }
 

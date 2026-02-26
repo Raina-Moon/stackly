@@ -245,8 +245,8 @@
     },
     "notificationCenter": {
       "title": "Notification channels & reminder settings",
-      "badge": "Frontend UI draft",
-      "description": "Control which channels receive schedule completion follow-up reminders and when they are sent. This is currently a browser/local draft UI.",
+      "badge": "Reminder channel settings",
+      "description": "Control which channels receive schedule completion follow-up reminders and when they are sent. Email/browser push are ready to use, and Slack works as an MVP with a bot token + channel ID.",
       "actions": {
         "save": "Save settings",
         "saving": "Saving..."
@@ -284,12 +284,21 @@
         },
         "slack": {
           "label": "Slack",
-          "description": "Future Slack integration for DM or channel reminders."
+          "description": "Send reminder messages to a configured Slack channel via the Stackly bot."
         },
         "webPush": {
           "label": "Browser push",
           "description": "Send real-time push notifications to Chrome and other browsers."
         }
+      },
+      "slack": {
+        "title": "Slack Channel Connection (MVP)",
+        "description": "Requires a Slack Bot Token configured on the server. Save the target channel ID here for reminder delivery.",
+        "channelIdLabel": "Slack channel ID",
+        "channelIdHelp": "Example: C0123456789 (or G0123456789 for private channels). Enter the channel ID, not the channel name.",
+        "clearChannel": "Clear channel ID",
+        "channelRequired": "Enter a channel ID before enabling the Slack channel.",
+        "channelConfigured": "Slack channel ID is configured."
       },
       "browser": {
         "title": "Browser permission & subscription",
@@ -323,7 +332,7 @@
         "testQueuedWithChannels": "Test notification was processed for {count} channels.",
         "testFailed": "Failed to send a test notification."
       },
-      "footer": "Next: apply saved user preferences in the reminder workers, add Slack OAuth integration, and a test notification button."
+      "footer": "Next: Slack OAuth install/workspace linking, channel picker UI (channel list), and board/user-level routing."
     }
   },
   "notificationsPage": {

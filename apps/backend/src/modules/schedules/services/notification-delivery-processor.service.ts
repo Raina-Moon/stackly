@@ -110,6 +110,17 @@ export class NotificationDeliveryProcessorService implements OnModuleInit, OnMod
             continue;
           }
 
+          if (fresh.channel === NotificationChannel.SLACK) {
+            const slackSent = await this.handleSlackDelivery(fresh);
+            if (slackSent) {
+              sentCount += 1;
+              await this.cacheInvalidation.onNotificationChange(fresh.userId);
+            } else {
+              skippedCount += 1;
+            }
+            continue;
+          }
+
           await this.notificationDeliveryRepository.update(fresh.id, {
             status: NotificationDeliveryStatus.SKIPPED,
             errorMessage: `${fresh.channel} channel handler is not implemented yet`,
@@ -267,6 +278,100 @@ export class NotificationDeliveryProcessorService implements OnModuleInit, OnMod
     return true;
   }
 
+  private async handleSlackDelivery(delivery: NotificationDelivery): Promise<boolean> {
+    const event = await this.notificationEventRepository.findOne({
+      where: { id: delivery.eventId },
+    });
+    if (!event) {
+      await this.notificationDeliveryRepository.update(delivery.id, {
+        status: NotificationDeliveryStatus.FAILED,
+        errorMessage: 'Notification event not found',
+      });
+      return false;
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: delivery.userId },
+      select: ['id', 'nickname', 'firstName', 'notificationPreferences'],
+    });
+    if (!user) {
+      await this.notificationDeliveryRepository.update(delivery.id, {
+        status: NotificationDeliveryStatus.FAILED,
+        errorMessage: 'Recipient user not found',
+      });
+      return false;
+    }
+
+    const slackBotToken = this.configService.get<string>('SLACK_BOT_TOKEN')?.trim();
+    if (!slackBotToken) {
+      await this.notificationDeliveryRepository.update(delivery.id, {
+        status: NotificationDeliveryStatus.SKIPPED,
+        errorMessage: 'SLACK_BOT_TOKEN is not configured',
+      });
+      return false;
+    }
+
+    const rawPrefs =
+      user.notificationPreferences && typeof user.notificationPreferences === 'object'
+        ? (user.notificationPreferences as Record<string, unknown>)
+        : {};
+    const slackChannelId =
+      typeof rawPrefs.slackChannelId === 'string' && rawPrefs.slackChannelId.trim().length > 0
+        ? rawPrefs.slackChannelId.trim()
+        : null;
+
+    if (!slackChannelId) {
+      await this.notificationDeliveryRepository.update(delivery.id, {
+        status: NotificationDeliveryStatus.SKIPPED,
+        errorMessage: 'Slack channel ID is not configured for this user',
+      });
+      return false;
+    }
+
+    const payload = (event.payload || {}) as Record<string, unknown>;
+    const text = this.buildSlackMessageText({
+      nickname: user.nickname || user.firstName || 'User',
+      payload,
+    });
+
+    const response = await fetch('https://slack.com/api/chat.postMessage', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${slackBotToken}`,
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({
+        channel: slackChannelId,
+        text,
+        unfurl_links: false,
+        unfurl_media: false,
+      }),
+    });
+
+    const data = (await response.json().catch(() => null)) as
+      | { ok?: boolean; error?: string; ts?: string; channel?: string }
+      | null;
+
+    if (!response.ok || !data?.ok) {
+      const errorMessage =
+        data?.error || `Slack API request failed (${response.status} ${response.statusText})`;
+      await this.notificationDeliveryRepository.update(delivery.id, {
+        status: NotificationDeliveryStatus.FAILED,
+        errorMessage: errorMessage.slice(0, 1000),
+      });
+      return false;
+    }
+
+    await this.notificationDeliveryRepository.update(delivery.id, {
+      status: NotificationDeliveryStatus.SENT,
+      sentAt: new Date(),
+      providerMessageId: data.ts ?? null,
+      errorMessage: null,
+    });
+
+    return true;
+  }
+
   private async handleEmailDelivery(delivery: NotificationDelivery): Promise<boolean> {
     const event = await this.notificationEventRepository.findOne({
       where: { id: delivery.eventId },
@@ -408,6 +513,42 @@ export class NotificationDeliveryProcessorService implements OnModuleInit, OnMod
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  private buildSlackMessageText(params: {
+    nickname: string;
+    payload: Record<string, unknown>;
+  }): string {
+    const scheduleTitle = String(params.payload.scheduleTitle || 'Untitled schedule');
+    const cardTitle =
+      typeof params.payload.cardTitle === 'string' && params.payload.cardTitle.trim()
+        ? params.payload.cardTitle.trim()
+        : null;
+    const delayMinutes = Number(params.payload.followupDelayMinutes || 120);
+    const messageKo =
+      typeof params.payload.messageKo === 'string'
+        ? params.payload.messageKo
+        : '해당 스케줄을 완료했나요? 완료했으면 완료 처리 해주세요.';
+    const endTime = params.payload.endTime ? new Date(String(params.payload.endTime)) : null;
+    const endTimeText =
+      endTime && !Number.isNaN(endTime.getTime())
+        ? new Intl.DateTimeFormat('ko-KR', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          }).format(endTime)
+        : '-';
+
+    const lines = [
+      ':bell: *Stackly 완료 확인 리마인더*',
+      `담당자: ${params.nickname}`,
+      `스케줄: ${scheduleTitle}`,
+      cardTitle ? `카드: ${cardTitle}` : null,
+      `종료 시각: ${endTimeText}`,
+      `지연 시간: ${delayMinutes}분`,
+      `메시지: ${messageKo}`,
+    ].filter(Boolean);
+
+    return lines.join('\n');
   }
 
   private getWebPushClient():

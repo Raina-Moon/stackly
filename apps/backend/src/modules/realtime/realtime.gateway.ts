@@ -107,6 +107,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         id: user.id,
         email: user.email,
         nickname: user.nickname,
+        avatar: user.avatar,
       };
     } catch (error) {
       throw new WsException('Invalid authentication token');
@@ -154,6 +155,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       id: user.id,
       nickname: user.nickname,
       email: user.email,
+      avatar: user.avatar,
     };
     const users = this.realtimeService.joinBoard(client.id, boardId, userPresence);
     const voiceUsers = this.realtimeService.getVoiceUsers(boardId);
@@ -363,8 +365,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const user = this.getUser(client);
     const existingUsers = this.realtimeService.joinVoice(data.boardId, user.id);
 
-    // Notify existing voice users
-    client.to(`board:${data.boardId}`).emit('voice_user_joined', {
+    // Notify all users in the board (including sender)
+    this.server.to(`board:${data.boardId}`).emit('voice_user_joined', {
       userId: user.id,
       nickname: user.nickname,
       boardId: data.boardId,
@@ -387,7 +389,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const user = this.getUser(client);
     this.realtimeService.leaveVoice(data.boardId, user.id);
 
-    client.to(`board:${data.boardId}`).emit('voice_user_left', {
+    this.server.to(`board:${data.boardId}`).emit('voice_user_left', {
       userId: user.id,
       boardId: data.boardId,
     });
@@ -466,8 +468,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   ): Promise<void> {
     const user = this.getUser(client);
 
-    // Broadcast audio level to other users in the board
-    client.to(`board:${data.boardId}`).emit('voice_audio_level', {
+    // Broadcast audio level to all users in the board (including sender)
+    this.server.to(`board:${data.boardId}`).emit('voice_audio_level', {
       userId: user.id,
       level: data.level,
     });
@@ -604,6 +606,6 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         level: audio.level,
       },
     });
-    client.to(`board:${audio.boardId}`).emit('audio_level:bin', Buffer.from(response));
+    this.server.to(`board:${audio.boardId}`).emit('audio_level:bin', Buffer.from(response));
   }
 }

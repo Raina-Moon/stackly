@@ -29,8 +29,12 @@ import { FriendsModule } from './modules/friends/friends.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [
-        resolve(process.cwd(), '..', '..', '.env'),
+        resolve(process.cwd(), '.env.local'),
         resolve(process.cwd(), '.env'),
+        resolve(process.cwd(), 'apps', 'backend', '.env.local'),
+        resolve(process.cwd(), 'apps', 'backend', '.env'),
+        resolve(__dirname, '..', '.env.local'),
+        resolve(__dirname, '..', '.env'),
       ],
     }),
     TypeOrmModule.forRootAsync({

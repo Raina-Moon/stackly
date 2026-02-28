@@ -475,7 +475,7 @@ export default function BoardView({ board }: BoardViewProps) {
 
         <div className="flex items-center gap-2">
           {/* Online users */}
-          <OnlineUsers boardId={board.id} />
+          <OnlineUsers boardId={board.id} board={board} />
 
           {/* Voice chat */}
           <VoiceChat boardId={board.id} />
